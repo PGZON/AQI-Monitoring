@@ -1,0 +1,1586 @@
+{
+	"info": {
+		"_postman_id": "d3b195b7-feef-44d2-960a-e4906f75d88b",
+		"name": "AQI Test",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "40910113",
+		"_collection_link": "https://n00000-0535.postman.co/workspace/Jurnel~13fd171d-ca30-4761-a8ee-bad23874cb2e/collection/40910113-d3b195b7-feef-44d2-960a-e4906f75d88b?action=share&source=collection_link&creator=40910113"
+	},
+	"item": [
+		{
+			"name": "Addmin",
+			"item": [
+				{
+					"name": "Get ML Models Information",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/api/forecast/models",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"forecast",
+								"models"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Train ML Model (Admin Only)",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"city\": \"Delhi\",\r\n    \"days\": 30,\r\n    \"forceRetrain\": true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/forecast/train",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"forecast",
+								"train"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"user@example.com\",\r\n    \"password\": \"CoCo@2021\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/auth/login",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "SignUp",
+					"request": {
+						"auth": {
+							"type": "jwt",
+							"jwt": [
+								{
+									"key": "secret",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2Nzk1NywiZXhwIjoxNzU0NTcyNzU3fQ.cEGhwzU4LgMSvLIrxGkRaG_h4py1tz5ZI-gyZjWWkpU",
+									"type": "string"
+								},
+								{
+									"key": "isSecretBase64Encoded",
+									"value": true,
+									"type": "boolean"
+								},
+								{
+									"key": "algorithm",
+									"value": "HS256",
+									"type": "string"
+								},
+								{
+									"key": "payload",
+									"value": "{}",
+									"type": "string"
+								},
+								{
+									"key": "addTokenTo",
+									"value": "header",
+									"type": "string"
+								},
+								{
+									"key": "headerPrefix",
+									"value": "Bearer",
+									"type": "string"
+								},
+								{
+									"key": "queryParamKey",
+									"value": "token",
+									"type": "string"
+								},
+								{
+									"key": "header",
+									"value": "{}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"User\",\r\n    \"email\": \"user@example.com\",\r\n    \"password\": \"CoCo@2021\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/auth/signup",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"auth",
+								"signup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Me",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/api/auth/me",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"auth",
+								"me"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "AQI Data",
+			"item": [
+				{
+					"name": "AQI Fecth",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"lat\": 40.7128,\r\n    \"lon\": -74.0060,\r\n    \"saveToHistory\": true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/aqi/fetch",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"aqi",
+								"fetch"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get AQI History",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/api/aqi/history?limit=10&page=1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"aqi",
+								"history"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get AQI Analytics",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/api/aqi/analytics?days=30",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"aqi",
+								"analytics"
+							],
+							"query": [
+								{
+									"key": "days",
+									"value": "30"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Nearby AQI Data",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/api/aqi/nearby?lat=40.7128&lon=-74.0060&radius=10&limit=20",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"aqi",
+								"nearby"
+							],
+							"query": [
+								{
+									"key": "lat",
+									"value": "40.7128"
+								},
+								{
+									"key": "lon",
+									"value": "-74.0060"
+								},
+								{
+									"key": "radius",
+									"value": "10"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "History & Analytics",
+			"item": [
+				{
+					"name": "Get User's Detailed History",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/api/history/user?page=1&limit=20&days=30",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"history",
+								"user"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "days",
+									"value": "30"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Heatmap Data (Public)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/api/history/heatmap?range=7d&limit=50",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"history",
+								"heatmap"
+							],
+							"query": [
+								{
+									"key": "range",
+									"value": "7d"
+								},
+								{
+									"key": "limit",
+									"value": "50"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "ML-Ready Time Series Data",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/api/history/ml-data?city=Mumbai&days=30&interval=daily",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"history",
+								"ml-data"
+							],
+							"query": [
+								{
+									"key": "city",
+									"value": "Mumbai"
+								},
+								{
+									"key": "days",
+									"value": "30"
+								},
+								{
+									"key": "interval",
+									"value": "daily"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Trend Analysis",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/api/history/trends?city=Delhi&days=30",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"history",
+								"trends"
+							],
+							"query": [
+								{
+									"key": "city",
+									"value": "Delhi"
+								},
+								{
+									"key": "days",
+									"value": "30"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Location Statistic",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/api/history/location-stats?location=Mumbai&days=30",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"history",
+								"location-stats"
+							],
+							"query": [
+								{
+									"key": "location",
+									"value": "Mumbai"
+								},
+								{
+									"key": "days",
+									"value": "30"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "ML Forecasting",
+			"item": [
+				{
+					"name": "Get AQI Forecast by City",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/api/forecast/Mumbai?days=3",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"forecast",
+								"Mumbai"
+							],
+							"query": [
+								{
+									"key": "days",
+									"value": "3"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Forecast by Coordinates",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"lat\": 19.0760,\r\n    \"lon\": 72.8777,\r\n    \"days\": 5,\r\n    \"autoTrain\": true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/forecast/predict",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"forecast",
+								"predict"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Health Checkk",
+			"item": [
+				{
+					"name": "Check ML Service Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/api/forecast/health",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"forecast",
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Service Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/api/aqi/health",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"aqi",
+								"health"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Prefernce",
+			"item": [
+				{
+					"name": "Get user preferences",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/api/preferences",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"preferences"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reset preferences to defaults",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/api/preferences",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"preferences"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update preferences",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"alertSettings\": {\r\n      \"enabled\": true,\r\n      \"thresholds\": {\r\n        \"aqi\": {\r\n          \"moderate\": 120,\r\n          \"unhealthy\": 160,\r\n          \"veryUnhealthy\": 220,\r\n          \"hazardous\": 320\r\n        }\r\n      },\r\n      \"notifications\": {\r\n        \"email\": true,\r\n        \"sms\": false\r\n      }\r\n    }\r\n  }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/preferences",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"preferences"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Location Management",
+			"item": [
+				{
+					"name": "Add preferred location",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"city\": \"Mumbai\",\r\n    \"country\": \"India\",\r\n    \"coordinates\": {\r\n      \"latitude\": 19.0760,\r\n      \"longitude\": 72.8777\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/preferences/locations",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"preferences",
+								"locations"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove preferred location",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/api/preferences/locations/Mumbai",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"preferences",
+								"locations",
+								"Mumbai"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Threshold Updates",
+			"item": [
+				{
+					"name": "Update AQI thresholds",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"aqi\": {\r\n      \"moderate\": 100,\r\n      \"unhealthy\": 150,\r\n      \"veryUnhealthy\": 200,\r\n      \"hazardous\": 300\r\n    },\r\n    \"pollutants\": {\r\n      \"pm2_5\": 25.0,\r\n      \"pm10\": 45.0\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/preferences/thresholds",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"preferences",
+								"thresholds"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Contact Information",
+			"item": [
+				{
+					"name": "Contact Information",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"phoneNumber\": \"+91 9699152855\",\r\n    \"whatsappNumber\": \"+91 9699152855\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/preferences/contact",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"preferences",
+								"contact"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Notification",
+			"item": [
+				{
+					"name": "Email Notification",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"method\": \"email\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/preferences/test-notification",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"preferences",
+								"test-notification"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "SMS Notification",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"method\": \"sms\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/preferences/test-notification",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"preferences",
+								"test-notification"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Alert Management Testing",
+			"item": [
+				{
+					"name": "Alert History",
+					"item": [
+						{
+							"name": "Get user alert history",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:5000/api/alerts/history?page=1&limit=10",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "5000",
+									"path": [
+										"api",
+										"alerts",
+										"history"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get filtered alert history",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:5000/api/alerts/history?alertType=aqi_threshold&alertLevel=unhealthy&isRead=false",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "5000",
+									"path": [
+										"api",
+										"alerts",
+										"history"
+									],
+									"query": [
+										{
+											"key": "alertType",
+											"value": "aqi_threshold"
+										},
+										{
+											"key": "alertLevel",
+											"value": "unhealthy"
+										},
+										{
+											"key": "isRead",
+											"value": "false"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get alert statistics",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:5000/api/alerts/stats?days=30",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "5000",
+									"path": [
+										"api",
+										"alerts",
+										"stats"
+									],
+									"query": [
+										{
+											"key": "days",
+											"value": "30"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get unread alerts count",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:5000/api/alerts/unread-count",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "5000",
+									"path": [
+										"api",
+										"alerts",
+										"unread-count"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Alert Actions",
+					"item": [
+						{
+							"name": "Mark all alerts as read",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:5000/api/alerts/mark-read",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "5000",
+									"path": [
+										"api",
+										"alerts",
+										"mark-read"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Mark specific alerts as read",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"alertIds\": [\"ALERT_ID_1\", \"ALERT_ID_2\"]\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:5000/api/alerts/mark-read",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "5000",
+									"path": [
+										"api",
+										"alerts",
+										"mark-read"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Record user action on alert",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"action\": \"clicked\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:5000/api/alerts/\"abc\"/action",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "5000",
+									"path": [
+										"api",
+										"alerts",
+										"\"abc\"",
+										"action"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Send manual alert to location",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"location\": \"Delhi\",\r\n    \"message\": \"Test alert: High pollution levels detected.\",\r\n    \"alertLevel\": \"unhealthy\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/alerts/send",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"alerts",
+								"send"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send alert to specific users",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"userIds\": [\"USER_ID_1\", \"USER_ID_2\"],\r\n    \"message\": \"Test alert for specific users.\",\r\n    \"alertLevel\": \"moderate\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/alerts/send",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"alerts",
+								"send"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Scheduler Testing",
+			"item": [
+				{
+					"name": "Trigger immediate alert check",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/api/alerts/check-now",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"alerts",
+								"check-now"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get scheduler status",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/api/alerts/scheduler-status",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"alerts",
+								"scheduler-status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Run specific scheduler job",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGI2ZDU1Mjc5MWI0ZTQwODk1NTk3MiIsImlhdCI6MTc1Mzk2ODAzOCwiZXhwIjoxNzU0NTcyODM4fQ.jJP31yZLo4Kql36O5iFuqrxBgFGPQjozoNcZeEf8PZw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"jobName\": \"main_alert_check\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/alerts/run-job",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"alerts",
+								"run-job"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
