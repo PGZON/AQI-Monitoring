@@ -10,6 +10,8 @@ import './App.css';
 // Direct imports - NO lazy loading to prevent "Element type is invalid" errors
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import ModernDashboard from './pages/ModernDashboard'; // NEW: Modern premium UI dashboard
+import WeatherDashboard from './components/WeatherDashboard'; // NEW: Weather dashboard component
 import ForecastPage from './pages/ForecastPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import AlertSettingsPage from './pages/AlertSettingsPage';
@@ -80,6 +82,16 @@ function App() {
                   path="/dashboard"
                   element={
                     <ProtectedRoute>
+                      <ModernDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                
+                {/* Legacy dashboard route for backward compatibility */}
+                <Route
+                  path="/dashboard-old"
+                  element={
+                    <ProtectedRoute>
                       <DashboardPage />
                     </ProtectedRoute>
                   }
@@ -90,6 +102,15 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <ForecastPage />
+                    </ProtectedRoute>
+                  }
+                />
+                
+                <Route
+                  path="/weather"
+                  element={
+                    <ProtectedRoute>
+                      <WeatherDashboard />
                     </ProtectedRoute>
                   }
                 />

@@ -43,7 +43,7 @@ const {
 console.log('✅ Step 6: Logger middleware loaded');
 
 // Test route imports
-let authRoutes, aqiRoutes, historyRoutes, forecastRoutes, preferenceRoutes, alertRoutes, adminRoutes, healthCheckRoutes, userRoutes;
+let authRoutes, aqiRoutes, historyRoutes, forecastRoutes, preferenceRoutes, alertRoutes, adminRoutes, healthCheckRoutes, userRoutes, weatherRoutes;
 
 try {
   authRoutes = require('./routes/authRoutes');
@@ -78,6 +78,9 @@ try {
   
   analyticsRoutes = require('./routes/analyticsRoutes');
   console.log('✅ Step 14.6: Analytics routes loaded');
+  
+  weatherRoutes = require('./routes/weatherRoutes');
+  console.log('✅ Step 14.7: Weather routes loaded');
 } catch (error) {
   console.error('❌ Route loading failed:', error.message);
   console.error('Stack:', error.stack);
@@ -120,6 +123,7 @@ const startServer = async () => {
     app.use('/api/analytics', analyticsRoutes);
     app.use('/api/admin', adminRoutes);
     app.use('/api/health', healthCheckRoutes);
+    app.use('/api/weather', weatherRoutes);
 
     // Simple test route
     app.get('/test', (req, res) => {
