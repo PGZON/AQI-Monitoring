@@ -11,7 +11,7 @@ class UserService {
    */
   async getProfile() {
     try {
-      const response = await api.get('/api/user/me');
+      const response = await api.get('/user/me');
       return response.data;
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
@@ -36,7 +36,7 @@ class UserService {
    */
   async updateProfile(profileData) {
     try {
-      const response = await api.put('/api/user/update', profileData);
+      const response = await api.put('/user/update', profileData);
       return response.data;
     } catch (error) {
       console.error('Failed to update user profile:', error);
@@ -50,7 +50,7 @@ class UserService {
    */
   async getSavedLocations() {
     try {
-      const response = await api.get('/api/user/locations');
+      const response = await api.get('/user/locations');
       return response.data.locations || [];
     } catch (error) {
       console.warn('Failed to fetch saved locations, using local storage:', error);
@@ -88,7 +88,7 @@ class UserService {
    */
   async addSavedLocation(locationData) {
     try {
-      const response = await api.post('/api/user/locations', locationData);
+      const response = await api.post('/user/locations', locationData);
       return response.data;
     } catch (error) {
       console.warn('Failed to save location to backend, using localStorage:', error);
@@ -117,7 +117,7 @@ class UserService {
    */
   async removeSavedLocation(locationId) {
     try {
-      await api.delete(`/api/user/locations/${locationId}`);
+      await api.delete(`/user/locations/${locationId}`);
       return true;
     } catch (error) {
       console.warn('Failed to remove location from backend, using localStorage:', error);
@@ -141,7 +141,7 @@ class UserService {
    */
   async setDefaultLocation(locationId) {
     try {
-      await api.put(`/api/user/locations/${locationId}/default`);
+      await api.put(`/user/locations/${locationId}/default`);
       return true;
     } catch (error) {
       console.warn('Failed to set default location in backend, using localStorage:', error);
@@ -167,7 +167,7 @@ class UserService {
    */
   async getPreferences() {
     try {
-      const response = await api.get('/api/user/preferences');
+      const response = await api.get('/user/preferences');
       return response.data;
     } catch (error) {
       console.warn('Failed to fetch preferences from backend, using localStorage:', error);
@@ -200,7 +200,7 @@ class UserService {
    */
   async updatePreferences(preferences) {
     try {
-      const response = await api.put('/api/user/preferences', preferences);
+      const response = await api.put('/user/preferences', preferences);
       return response.data;
     } catch (error) {
       console.warn('Failed to update preferences in backend, using localStorage:', error);
@@ -217,7 +217,7 @@ class UserService {
    */
   async getUserStats() {
     try {
-      const response = await api.get('/api/user/stats');
+      const response = await api.get('/user/stats');
       return response.data;
     } catch (error) {
       console.warn('Failed to fetch user stats:', error);
@@ -244,7 +244,7 @@ class UserService {
       const formData = new FormData();
       formData.append('avatar', file);
       
-      const response = await api.post('/api/user/avatar', formData, {
+      const response = await api.post('/user/avatar', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -263,7 +263,7 @@ class UserService {
    */
   async deleteAccount() {
     try {
-      await api.delete('/api/user/account');
+      await api.delete('/user/account');
       return true;
     } catch (error) {
       console.error('Failed to delete user account:', error);
@@ -277,7 +277,7 @@ class UserService {
    */
   async exportData() {
     try {
-      const response = await api.get('/api/user/export');
+      const response = await api.get('/user/export');
       return response.data;
     } catch (error) {
       console.error('Failed to export user data:', error);

@@ -1,33 +1,54 @@
-import React, { Suspense } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { UserProvider } from './context/UserContext';
 import { AlertProvider } from './context/AlertContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import PublicRoute from './routes/PublicRoute';
-import LoadingFallback from './components/LoadingFallback';
 import './App.css';
 
-// Lazy load pages for better performance
-const LoginPage = React.lazy(() => import('./pages/LoginPage'));
-const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
-const ForecastPage = React.lazy(() => import('./pages/ForecastPage'));
-const AnalyticsPage = React.lazy(() => import('./pages/AnalyticsPage'));
-const AlertSettingsPage = React.lazy(() => import('./pages/AlertSettingsPage'));
-const ProfilePage = React.lazy(() => import('./pages/ProfilePage'));
-const LandingPage = React.lazy(() => import('./pages/LandingPage'));
-const OfflinePage = React.lazy(() => import('./pages/OfflinePage'));
+// Direct imports - NO lazy loading to prevent "Element type is invalid" errors
+import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
+import ForecastPage from './pages/ForecastPage';
+import AnalyticsPage from './pages/AnalyticsPage';
+import AlertSettingsPage from './pages/AlertSettingsPage';
+import ProfilePage from './pages/ProfilePage';
+import LandingPage from './pages/LandingPage';
+import OfflinePage from './pages/OfflinePage';
 
-// Admin panel pages - lazy loaded separately
-const AdminDashboard = React.lazy(() => import('./pages/AdminPanel/AdminDashboard'));
-const UserInsights = React.lazy(() => import('./pages/AdminPanel/UserInsights'));
-const MLStatusPanel = React.lazy(() => import('./pages/AdminPanel/MLStatusPanel'));
-const DataReview = React.lazy(() => import('./pages/AdminPanel/DataReview'));
-const LogsViewer = React.lazy(() => import('./pages/AdminPanel/LogsViewer'));
-const ProtectedAdminRoute = React.lazy(() => import('./components/admin/ProtectedAdminRoute'));
+// Admin panel pages - direct imports
+import AdminDashboard from './pages/AdminPanel/AdminDashboard';
+import UserInsights from './pages/AdminPanel/UserInsights';
+import MLStatusPanel from './pages/AdminPanel/MLStatusPanel';
+import DataReview from './pages/AdminPanel/DataReview';
+import LogsViewer from './pages/AdminPanel/LogsViewer';
+import ProtectedAdminRoute from './components/admin/ProtectedAdminRoute';
+
+// Catch-all route component to prevent infinite redirects
+const CatchAllRoute = () => {
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  } else {
+    return <Navigate to="/login" replace />;
+  }
+};
 
 function App() {
-  console.log('🚀 [App] App component mounting');
+  console.log('🚀 [App] App component mounting - NO LAZY LOADING');
   
   return (
     <AuthProvider>
@@ -35,156 +56,126 @@ function App() {
         <AlertProvider>
           <Router>
             <div className="App">
-              <Suspense fallback={<LoadingFallback message="Loading application..." />}>
-                <Routes>
-                  {/* Public Routes */}
-                  <Route 
-                    path="/" 
-                    element={
-                      <PublicRoute>
-                        <Suspense fallback={<LoadingFallback message="Loading home page..." />}>
-                          <LandingPage />
-                        </Suspense>
-                      </PublicRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/login" 
-                    element={
-                      <PublicRoute>
-                        <Suspense fallback={<LoadingFallback message="Loading login..." />}>
-                          <LoginPage />
-                        </Suspense>
-                      </PublicRoute>
-                    } 
-                  />
+              <Routes>
+                {/* Public Routes */}
+                <Route 
+                  path="/" 
+                  element={
+                    <PublicRoute>
+                      <LandingPage />
+                    </PublicRoute>
+                  } 
+                />
+                <Route 
+                  path="/login" 
+                  element={
+                    <PublicRoute>
+                      <LoginPage />
+                    </PublicRoute>
+                  } 
+                />
 
-                  {/* Protected Routes */}
-                  <Route
-                    path="/dashboard"
-                    element={
-                      <ProtectedRoute>
-                        <Suspense fallback={<LoadingFallback message="Loading dashboard..." />}>
-                          <DashboardPage />
-                        </Suspense>
-                      </ProtectedRoute>
-                    }
-                  />
-                  
-                  <Route
-                    path="/forecast"
-                    element={
-                      <ProtectedRoute>
-                        <Suspense fallback={<LoadingFallback message="Loading forecast..." />}>
-                          <ForecastPage />
-                        </Suspense>
-                      </ProtectedRoute>
-                    }
-                  />
-                  
-                  <Route
-                    path="/analytics"
-                    element={
-                      <ProtectedRoute>
-                        <Suspense fallback={<LoadingFallback message="Loading analytics..." />}>
-                          <AnalyticsPage />
-                        </Suspense>
-                      </ProtectedRoute>
-                    }
-                  />
-                  
-                  <Route
-                    path="/alerts"
-                    element={
-                      <ProtectedRoute>
-                        <Suspense fallback={<LoadingFallback message="Loading alerts..." />}>
-                          <AlertSettingsPage />
-                        </Suspense>
-                      </ProtectedRoute>
-                    }
-                  />
-                  
-                  <Route
-                    path="/profile"
-                    element={
-                      <ProtectedRoute>
-                        <Suspense fallback={<LoadingFallback message="Loading profile..." />}>
-                          <ProfilePage />
-                        </Suspense>
-                      </ProtectedRoute>
-                    }
-                  />
+                {/* Protected Routes */}
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <DashboardPage />
+                    </ProtectedRoute>
+                  }
+                />
+                
+                <Route
+                  path="/forecast"
+                  element={
+                    <ProtectedRoute>
+                      <ForecastPage />
+                    </ProtectedRoute>
+                  }
+                />
+                
+                <Route
+                  path="/analytics"
+                  element={
+                    <ProtectedRoute>
+                      <AnalyticsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                
+                <Route
+                  path="/alerts"
+                  element={
+                    <ProtectedRoute>
+                      <AlertSettingsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <ProfilePage />
+                    </ProtectedRoute>
+                  }
+                />
 
-                  {/* Admin Routes */}
-                  <Route
-                    path="/admin"
-                    element={
-                      <Suspense fallback={<LoadingFallback message="Loading admin panel..." />}>
-                        <ProtectedAdminRoute>
-                          <AdminDashboard />
-                        </ProtectedAdminRoute>
-                      </Suspense>
-                    }
-                  />
-                  
-                  <Route
-                    path="/admin/users"
-                    element={
-                      <Suspense fallback={<LoadingFallback message="Loading user management..." />}>
-                        <ProtectedAdminRoute>
-                          <UserInsights />
-                        </ProtectedAdminRoute>
-                      </Suspense>
-                    }
-                  />
-                  
-                  <Route
-                    path="/admin/ml"
-                    element={
-                      <Suspense fallback={<LoadingFallback message="Loading ML monitoring..." />}>
-                        <ProtectedAdminRoute>
-                          <MLStatusPanel />
-                        </ProtectedAdminRoute>
-                      </Suspense>
-                    }
-                  />
-                  
-                  <Route
-                    path="/admin/data"
-                    element={
-                      <Suspense fallback={<LoadingFallback message="Loading data review..." />}>
-                        <ProtectedAdminRoute>
-                          <DataReview />
-                        </ProtectedAdminRoute>
-                      </Suspense>
-                    }
-                  />
-                  
-                  <Route
-                    path="/admin/logs"
-                    element={
-                      <Suspense fallback={<LoadingFallback message="Loading system logs..." />}>
-                        <ProtectedAdminRoute>
-                          <LogsViewer />
-                        </ProtectedAdminRoute>
-                      </Suspense>
-                    }
-                  />
+                {/* Admin Routes */}
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedAdminRoute>
+                      <AdminDashboard />
+                    </ProtectedAdminRoute>
+                  }
+                />
+                
+                <Route
+                  path="/admin/users"
+                  element={
+                    <ProtectedAdminRoute>
+                      <UserInsights />
+                    </ProtectedAdminRoute>
+                  }
+                />
+                
+                <Route
+                  path="/admin/ml"
+                  element={
+                    <ProtectedAdminRoute>
+                      <MLStatusPanel />
+                    </ProtectedAdminRoute>
+                  }
+                />
+                
+                <Route
+                  path="/admin/data"
+                  element={
+                    <ProtectedAdminRoute>
+                      <DataReview />
+                    </ProtectedAdminRoute>
+                  }
+                />
+                
+                <Route
+                  path="/admin/logs"
+                  element={
+                    <ProtectedAdminRoute>
+                      <LogsViewer />
+                    </ProtectedAdminRoute>
+                  }
+                />
 
-                  {/* Offline page */}
-                  <Route 
-                    path="/offline" 
-                    element={
-                      <Suspense fallback={<LoadingFallback message="Loading offline page..." />}>
-                        <OfflinePage />
-                      </Suspense>
-                    } 
-                  />
+                {/* Offline page */}
+                <Route 
+                  path="/offline" 
+                  element={<OfflinePage />} 
+                />
 
-                  {/* Catch all route - redirect to dashboard if authenticated, otherwise to landing */}
-                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                </Routes>
-              </Suspense>
+                {/* Catch all route - redirect appropriately based on auth status */}
+                <Route path="*" element={<CatchAllRoute />} />
+              </Routes>
             </div>
           </Router>
         </AlertProvider>

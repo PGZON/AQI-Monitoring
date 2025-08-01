@@ -17,6 +17,39 @@ console.log('🔧 [API] API instance created with config:', {
   env_variable: process.env.REACT_APP_API_URL
 });
 
+// Simple health check function
+export const checkBackendHealth = async () => {
+  try {
+    console.log('🏥 [API] Checking backend health...');
+    const response = await api.get('/health');
+    console.log('✅ [API] Backend is healthy:', response.data);
+    return true;
+  } catch (error) {
+    console.error('❌ [API] Backend health check failed:', error.message);
+    return false;
+  }
+};
+
+// Test function to verify API endpoints
+export const testAPIEndpoints = async () => {
+  const endpoints = [
+    { name: 'Health', path: '/health' },
+    { name: 'Auth Me', path: '/auth/me' },
+    { name: 'User Profile', path: '/user/me' }
+  ];
+  
+  console.log('🧪 [API] Testing endpoints...');
+  
+  for (const endpoint of endpoints) {
+    try {
+      const response = await api.get(endpoint.path);
+      console.log(`✅ [API] ${endpoint.name} endpoint working:`, response.status);
+    } catch (error) {
+      console.log(`❌ [API] ${endpoint.name} endpoint failed:`, error.response?.status || error.message);
+    }
+  }
+};
+
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {

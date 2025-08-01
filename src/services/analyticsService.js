@@ -1,289 +1,187 @@
 /**
- * Analytics Service - Handles user analytics and historical AQI data
+ * Analytics Service - Handles data analytics and insights
  */
+
+import api from '../utils/api';
 
 class AnalyticsService {
   constructor() {
     this.cache = new Map();
-    this.cacheTimeout = 10 * 60 * 1000; // 10 minutes for analytics data
+    this.cacheTimeout = 10 * 60 * 1000; // 10 minutes
   }
 
   /**
-   * Get cache key for analytics requests
+   * Get historical analytics data
    */
-  getCacheKey(endpoint, params = {}) {
-    const sortedParams = Object.keys(params)
-      .sort()
-      .map(key => `${key}=${params[key]}`)
-      .join('&');
-    return `${endpoint}?${sortedParams}`;
-  }
-
-  /**
-   * Check if cached data is still valid
-   */
-  isCacheValid(cacheEntry) {
-    return cacheEntry && (Date.now() - cacheEntry.timestamp) < this.cacheTimeout;
-  }
-
-  /**
-   * Fetch historical AQI data for a location
-   */
-  async getHistoricalAQI(latitude, longitude, days = 7) {
-    const params = { latitude, longitude, days };
-    const cacheKey = this.getCacheKey('historical-aqi', params);
-    
-    // Check cache first
+  async getHistoricalAnalytics(days = 30, location = null) {
+    const cacheKey = `historical-${days}-${location?.latitude}-${location?.longitude}`;
     const cached = this.cache.get(cacheKey);
-    if (this.isCacheValid(cached)) {
-      return {
-        success: true,
-        data: cached.data,
-        source: 'cache'
-      };
+    
+    if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+      return { success: true, data: cached.data, source: 'cache' };
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/analytics/historical`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(params)
-      });
+      const params = { days };
+      if (location) {
+        params.latitude = location.latitude;
+        params.longitude = location.longitude;
+      }
 
-      if (response.ok) {
-        const data = await response.json();
+      const response = await api.get('/analytics/historical', { params });
+
+      if (response.status === 200) {
+        const data = response.data;
         
-        // Cache the successful response
         this.cache.set(cacheKey, {
           data: data.data,
           timestamp: Date.now()
         });
 
-        return {
-          success: true,
-          data: data.data,
-          source: 'api'
-        };
+        return { success: true, data: data.data, source: 'api' };
       }
       
-      // Fallback to mock data if API fails
-      const mockData = this.generateMockHistoricalData(latitude, longitude, days);
-      return {
-        success: true,
-        data: mockData,
-        source: 'mock'
-      };
+      // Generate mock data for development
+      const mockData = this.generateMockHistoricalData(days, location);
+      return { success: true, data: mockData, source: 'mock' };
     } catch (error) {
-      console.error('Analytics Service: Historical AQI fetch failed:', error);
+      console.error('Analytics Service: Failed to fetch historical data:', error);
       
-      // Return mock data on error
-      const mockData = this.generateMockHistoricalData(latitude, longitude, days);
-      return {
-        success: false,
-        data: mockData,
-        source: 'mock',
-        error: error.message
-      };
+      const mockData = this.generateMockHistoricalData(days, location);
+      return { success: false, data: mockData, source: 'mock', error: error.message };
     }
   }
 
   /**
    * Get weekly comparison data
    */
-  async getWeeklyComparison(latitude, longitude) {
-    const params = { latitude, longitude };
-    const cacheKey = this.getCacheKey('weekly-comparison', params);
-    
-    // Check cache first
+  async getWeeklyComparison(location = null) {
+    const cacheKey = `weekly-${location?.latitude}-${location?.longitude}`;
     const cached = this.cache.get(cacheKey);
-    if (this.isCacheValid(cached)) {
-      return {
-        success: true,
-        data: cached.data,
-        source: 'cache'
-      };
+    
+    if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+      return { success: true, data: cached.data, source: 'cache' };
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/analytics/weekly-comparison`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(params)
-      });
+      const params = {};
+      if (location) {
+        params.latitude = location.latitude;
+        params.longitude = location.longitude;
+      }
 
-      if (response.ok) {
-        const data = await response.json();
+      const response = await api.get('/analytics/weekly-comparison', { params });
+
+      if (response.status === 200) {
+        const data = response.data;
         
-        // Cache the successful response
         this.cache.set(cacheKey, {
           data: data.data,
           timestamp: Date.now()
         });
 
-        return {
-          success: true,
-          data: data.data,
-          source: 'api'
-        };
+        return { success: true, data: data.data, source: 'api' };
       }
       
-      // Fallback to mock data
-      const mockData = this.generateMockWeeklyComparison();
-      return {
-        success: true,
-        data: mockData,
-        source: 'mock'
-      };
+      // Generate mock data for development
+      const mockData = this.generateMockWeeklyData(location);
+      return { success: true, data: mockData, source: 'mock' };
     } catch (error) {
-      console.error('Analytics Service: Weekly comparison fetch failed:', error);
+      console.error('Analytics Service: Failed to fetch weekly comparison:', error);
       
-      const mockData = this.generateMockWeeklyComparison();
-      return {
-        success: false,
-        data: mockData,
-        source: 'mock',
-        error: error.message
-      };
+      const mockData = this.generateMockWeeklyData(location);
+      return { success: false, data: mockData, source: 'mock', error: error.message };
     }
   }
 
   /**
-   * Get user's location history
+   * Get location history analytics
    */
-  async getLocationHistory() {
-    const cacheKey = this.getCacheKey('location-history');
-    
-    // Check cache first
+  async getLocationHistory(location, days = 30) {
+    const cacheKey = `location-history-${location.latitude}-${location.longitude}-${days}`;
     const cached = this.cache.get(cacheKey);
-    if (this.isCacheValid(cached)) {
-      return {
-        success: true,
-        data: cached.data,
-        source: 'cache'
-      };
+    
+    if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+      return { success: true, data: cached.data, source: 'cache' };
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/analytics/location-history`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const params = {
+        latitude: location.latitude,
+        longitude: location.longitude,
+        days
+      };
 
-      if (response.ok) {
-        const data = await response.json();
+      const response = await api.get('/analytics/location-history', { params });
+
+      if (response.status === 200) {
+        const data = response.data;
         
-        // Cache the successful response
         this.cache.set(cacheKey, {
           data: data.data,
           timestamp: Date.now()
         });
 
-        return {
-          success: true,
-          data: data.data,
-          source: 'api'
-        };
+        return { success: true, data: data.data, source: 'api' };
       }
       
-      // Fallback to mock data
-      const mockData = this.generateMockLocationHistory();
-      return {
-        success: true,
-        data: mockData,
-        source: 'mock'
-      };
+      // Generate mock data for development
+      const mockData = this.generateMockLocationHistory(location, days);
+      return { success: true, data: mockData, source: 'mock' };
     } catch (error) {
-      console.error('Analytics Service: Location history fetch failed:', error);
+      console.error('Analytics Service: Failed to fetch location history:', error);
       
-      const mockData = this.generateMockLocationHistory();
-      return {
-        success: false,
-        data: mockData,
-        source: 'mock',
-        error: error.message
-      };
+      const mockData = this.generateMockLocationHistory(location, days);
+      return { success: false, data: mockData, source: 'mock', error: error.message };
     }
   }
 
   /**
-   * Get personal insights
+   * Get insights and recommendations
    */
-  async getPersonalInsights(latitude, longitude) {
-    const params = { latitude, longitude };
-    const cacheKey = this.getCacheKey('personal-insights', params);
-    
-    // Check cache first
+  async getInsights(location = null) {
+    const cacheKey = `insights-${location?.latitude}-${location?.longitude}`;
     const cached = this.cache.get(cacheKey);
-    if (this.isCacheValid(cached)) {
-      return {
-        success: true,
-        data: cached.data,
-        source: 'cache'
-      };
+    
+    if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+      return { success: true, data: cached.data, source: 'cache' };
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/analytics/insights`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(params)
-      });
+      const params = {};
+      if (location) {
+        params.latitude = location.latitude;
+        params.longitude = location.longitude;
+      }
 
-      if (response.ok) {
-        const data = await response.json();
+      const response = await api.get('/analytics/insights', { params });
+
+      if (response.status === 200) {
+        const data = response.data;
         
-        // Cache the successful response
         this.cache.set(cacheKey, {
           data: data.data,
           timestamp: Date.now()
         });
 
-        return {
-          success: true,
-          data: data.data,
-          source: 'api'
-        };
+        return { success: true, data: data.data, source: 'api' };
       }
       
-      // Fallback to mock data
-      const mockData = this.generateMockInsights();
-      return {
-        success: true,
-        data: mockData,
-        source: 'mock'
-      };
+      // Generate mock insights for development
+      const mockData = this.generateMockInsights(location);
+      return { success: true, data: mockData, source: 'mock' };
     } catch (error) {
-      console.error('Analytics Service: Insights fetch failed:', error);
+      console.error('Analytics Service: Failed to fetch insights:', error);
       
-      const mockData = this.generateMockInsights();
-      return {
-        success: false,
-        data: mockData,
-        source: 'mock',
-        error: error.message
-      };
+      const mockData = this.generateMockInsights(location);
+      return { success: false, data: mockData, source: 'mock', error: error.message };
     }
   }
 
   /**
    * Generate mock historical AQI data
    */
-  generateMockHistoricalData(latitude, longitude, days = 7) {
+  generateMockHistoricalData(days = 7, location = null) {
     const data = [];
     const now = new Date();
     
@@ -311,7 +209,7 @@ class AnalyticsService {
         o3: Math.round(Math.max(1, o3)),
         co: parseFloat(Math.max(0.1, co).toFixed(1)),
         so2: Math.round(Math.max(1, so2)),
-        location: `Location ${latitude.toFixed(2)}, ${longitude.toFixed(2)}`,
+        location: location ? `Location ${location.latitude.toFixed(2)}, ${location.longitude.toFixed(2)}` : `Location ${Math.random() * 100 - 50}.${Math.random() * 100}, ${Math.random() * 100 - 50}.${Math.random() * 100}`,
         temperature: Math.round(20 + Math.random() * 15),
         humidity: Math.round(40 + Math.random() * 40),
         windSpeed: Math.round(Math.random() * 15)
@@ -325,7 +223,7 @@ class AnalyticsService {
         maxAQI: Math.max(...data.map(item => item.aqi)),
         minAQI: Math.min(...data.map(item => item.aqi)),
         totalDays: days,
-        location: `Location ${latitude.toFixed(2)}, ${longitude.toFixed(2)}`
+        location: location ? `Location ${location.latitude.toFixed(2)}, ${location.longitude.toFixed(2)}` : `Location ${Math.random() * 100 - 50}.${Math.random() * 100}, ${Math.random() * 100 - 50}.${Math.random() * 100}`
       }
     };
   }
@@ -333,7 +231,7 @@ class AnalyticsService {
   /**
    * Generate mock weekly comparison data
    */
-  generateMockWeeklyComparison() {
+  generateMockWeeklyData(location = null) {
     const thisWeekAvg = 45 + Math.random() * 50;
     const lastWeekAvg = 40 + Math.random() * 60;
     const change = ((thisWeekAvg - lastWeekAvg) / lastWeekAvg) * 100;
@@ -362,7 +260,7 @@ class AnalyticsService {
   /**
    * Generate mock location history
    */
-  generateMockLocationHistory() {
+  generateMockLocationHistory(location = null, days = 30) {
     const locations = [
       { name: 'Downtown', lat: 40.7128, lng: -74.0060, aqi: 65 },
       { name: 'Central Park', lat: 40.7829, lng: -73.9654, aqi: 42 },
@@ -377,7 +275,7 @@ class AnalyticsService {
       latitude: loc.lat,
       longitude: loc.lng,
       lastAQI: loc.aqi + Math.round(Math.random() * 20 - 10),
-      lastViewed: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
+      lastViewed: new Date(Date.now() - Math.random() * days * 24 * 60 * 60 * 1000).toISOString(),
       viewCount: Math.round(1 + Math.random() * 10),
       isFavorite: Math.random() > 0.7
     }));
@@ -386,7 +284,7 @@ class AnalyticsService {
   /**
    * Generate mock personal insights
    */
-  generateMockInsights() {
+  generateMockInsights(location = null) {
     const insights = [
       "You've been tracking air quality for 12 days. Great job staying informed!",
       "Your most viewed location had 15% better air quality this week.",
@@ -416,6 +314,38 @@ class AnalyticsService {
    */
   clearCache() {
     this.cache.clear();
+    console.log('🗑️ [AnalyticsService] Cache cleared');
+  }
+
+  /**
+   * Clear all browser storage
+   */
+  clearAllStorage() {
+    // Clear localStorage cache keys
+    const cacheKeys = ['analytics-data', 'historical-data', 'user-preferences'];
+    cacheKeys.forEach(key => {
+      if (localStorage.getItem(key)) {
+        localStorage.removeItem(key);
+        console.log(`🗑️ [AnalyticsService] Cleared localStorage: ${key}`);
+      }
+    });
+    
+    // Clear sessionStorage
+    sessionStorage.clear();
+    console.log('🗑️ [AnalyticsService] Cleared sessionStorage');
+    
+    // Clear service worker cache
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        names.forEach(name => {
+          caches.delete(name);
+          console.log(`🗑️ [AnalyticsService] Cleared cache: ${name}`);
+        });
+      });
+    }
+    
+    // Clear internal cache
+    this.clearCache();
   }
 
   /**

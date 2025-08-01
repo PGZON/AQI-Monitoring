@@ -14,8 +14,11 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   console.log('🔧 [AuthProvider] AuthProvider component initializing');
   
+  // Initialize with token from localStorage to avoid flash of unauthenticated state
+  const storedToken = localStorage.getItem('token');
+  
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [token, setToken] = useState(storedToken);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -26,8 +29,18 @@ export const AuthProvider = ({ children }) => {
     loading: loading
   });
 
-  // Initialize authentication state on app load
+  // Clear auth helper function  
+  const clearAuth = () => {
+    localStorage.removeItem('token');
+    setToken(null);
+    setUser(null);
+    setIsAuthenticated(false);
+  };
+
+  // Initialize authentication state on app load - ONLY ONCE
   useEffect(() => {
+    let isMounted = true; // Prevent state updates if component unmounts
+    
     console.log('🔄 [AuthProvider] useEffect triggered - initializing auth');
     
     const initializeAuth = async () => {
@@ -35,29 +48,63 @@ export const AuthProvider = ({ children }) => {
         const storedToken = localStorage.getItem('token');
         console.log('🔍 [AuthProvider] Checking stored token:', storedToken ? `${storedToken.substring(0, 20)}...` : 'null');
         
-        if (storedToken) {
-          // Validate token with backend
-          const response = await api.get('/auth/me');
-          
-          if (response.data.success) {
-            setToken(storedToken);
-            setUser(response.data.user);
-            setIsAuthenticated(true);
-          } else {
-            // Invalid token, clear storage
-            clearAuth();
+        if (storedToken && isMounted) {
+          try {
+            console.log('🔐 [AuthProvider] Validating token with backend...');
+            // Validate token with backend
+            const response = await api.get('/auth/me');
+            
+            if (response.data.success && isMounted) {
+              console.log('✅ [AuthProvider] Token validation successful');
+              setToken(storedToken);
+              setUser(response.data.user);
+              setIsAuthenticated(true);
+            } else if (isMounted) {
+              console.log('❌ [AuthProvider] Token validation failed - clearing auth');
+              clearAuth();
+            }
+          } catch (tokenError) {
+            if (isMounted) {
+              console.log('❌ [AuthProvider] Token validation error:', tokenError.message);
+              // Check if it's a network error
+              if (!tokenError.response) {
+                console.warn('🌐 [AuthProvider] Network error - backend may be down');
+              }
+              clearAuth();
+            }
           }
+        } else if (isMounted) {
+          console.log('ℹ️ [AuthProvider] No stored token found');
         }
       } catch (error) {
-        console.log('Token validation failed:', error.message);
-        clearAuth();
+        if (isMounted) {
+          console.error('❌ [AuthProvider] Auth initialization error:', error);
+          clearAuth();
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+          console.log('✅ [AuthProvider] Auth initialization complete');
+        }
       }
     };
 
+    // Add a timeout to prevent infinite loading
+    const authTimeout = setTimeout(() => {
+      if (isMounted) {
+        console.warn('⚠️ [AuthProvider] Auth initialization timeout - forcing completion');
+        setLoading(false);
+      }
+    }, 20000); // 20 second timeout
+
     initializeAuth();
-  }, []);
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      clearTimeout(authTimeout);
+    };
+  }, []); // Empty dependency array to run only once
 
   const login = async (email, password) => {
     try {
@@ -164,16 +211,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    console.log('🚪 [AuthContext] Logging out user');
     clearAuth();
+    
+    // Clear request coordinator state on logout
+    // requestCoordinator.clear(); // This line is removed as per the edit hint
+    
     // Optional: Call backend logout endpoint
     // api.post('/auth/logout').catch(() => {});
-  };
-
-  const clearAuth = () => {
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
-    setIsAuthenticated(false);
   };
 
   const updateUser = (updatedUser) => {

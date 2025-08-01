@@ -3,7 +3,7 @@
  * Handles all admin-related API calls and data management
  */
 
-import api from './api';
+import api from '../utils/api';
 
 class AdminService {
   /**

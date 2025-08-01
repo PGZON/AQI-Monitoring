@@ -4,6 +4,9 @@ const AQICard = ({ data }) => {
   if (!data) return null;
 
   const { aqi, location, pollutants, coordinates } = data;
+  
+  // Extract AQI value - handle both number and object formats
+  const aqiValue = typeof aqi === 'number' ? aqi : aqi?.index || 0;
 
   // Get AQI color and emoji based on value
   const getAQIInfo = (aqiValue) => {
@@ -58,7 +61,7 @@ const AQICard = ({ data }) => {
     }
   };
 
-  const aqiInfo = getAQIInfo(aqi);
+  const aqiInfo = getAQIInfo(aqiValue);
 
   // Pollutant info with units and descriptions
   const pollutantInfo = {
@@ -77,7 +80,9 @@ const AQICard = ({ data }) => {
         <div className="aqi-header">
           <div className="aqi-location">
             <span className="location-icon">📍</span>
-            <h2 className="location-name">{location}</h2>
+            <h2 className="location-name">
+              {typeof location === 'string' ? location : location?.formatted || location?.name || 'Unknown Location'}
+            </h2>
             {coordinates && (
               <span className="coordinates">
                 {coordinates.latitude.toFixed(4)}, {coordinates.longitude.toFixed(4)}
@@ -90,7 +95,7 @@ const AQICard = ({ data }) => {
           <div className="aqi-value-container">
             <span className="aqi-emoji">{aqiInfo.emoji}</span>
             <div className="aqi-value" style={{ color: aqiInfo.color }}>
-              {aqi}
+              {aqiValue}
             </div>
             <div className="aqi-label">AQI</div>
           </div>
@@ -112,6 +117,10 @@ const AQICard = ({ data }) => {
             const info = pollutantInfo[key];
             if (!info) return null;
 
+            // Handle both object format {value, unit} and direct value format
+            const pollutantValue = typeof value === 'object' && value !== null ? value.value : value;
+            const pollutantUnit = typeof value === 'object' && value !== null ? value.unit : info.unit;
+
             return (
               <div key={key} className="pollutant-item">
                 <div className="pollutant-header">
@@ -119,8 +128,8 @@ const AQICard = ({ data }) => {
                   <span className="pollutant-description">{info.description}</span>
                 </div>
                 <div className="pollutant-value">
-                  <span className="value">{value}</span>
-                  <span className="unit">{info.unit}</span>
+                  <span className="value">{pollutantValue}</span>
+                  <span className="unit">{pollutantUnit}</span>
                 </div>
               </div>
             );
@@ -132,12 +141,12 @@ const AQICard = ({ data }) => {
       <div className="health-recommendations">
         <h3 className="recommendations-title">Health Recommendations</h3>
         <div className="recommendations-content">
-          {aqi <= 100 ? (
+          {aqiValue <= 100 ? (
             <div className="recommendation-item">
               <span className="rec-icon">✅</span>
               <span>Great day for outdoor activities!</span>
             </div>
-          ) : aqi <= 150 ? (
+          ) : aqiValue <= 150 ? (
             <>
               <div className="recommendation-item">
                 <span className="rec-icon">⚠️</span>
@@ -148,7 +157,7 @@ const AQICard = ({ data }) => {
                 <span>General public can enjoy outdoor activities normally</span>
               </div>
             </>
-          ) : aqi <= 200 ? (
+          ) : aqiValue <= 200 ? (
             <>
               <div className="recommendation-item">
                 <span className="rec-icon">🚫</span>

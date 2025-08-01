@@ -269,6 +269,218 @@ const getUserStats = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc    Get saved locations
+ * @route   GET /api/user/locations
+ * @access  Private
+ */
+const getSavedLocations = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const locations = user.savedLocations || [];
+
+    res.status(200).json({
+      success: true,
+      data: { locations }
+    });
+  } catch (error) {
+    console.error('❌ Get saved locations error:', error);
+    next(error);
+  }
+};
+
+/**
+ * @desc    Add saved location
+ * @route   POST /api/user/locations
+ * @access  Private
+ */
+const addSavedLocation = async (req, res, next) => {
+  try {
+    const { name, coordinates } = req.body;
+    const user = await User.findById(req.user.id);
+
+    const newLocation = {
+      id: Date.now().toString(),
+      name,
+      coordinates,
+      isDefault: user.savedLocations.length === 0,
+      addedAt: new Date().toISOString()
+    };
+
+    user.savedLocations.push(newLocation);
+    await user.save();
+
+    res.status(201).json({
+      success: true,
+      data: newLocation
+    });
+  } catch (error) {
+    console.error('❌ Add saved location error:', error);
+    next(error);
+  }
+};
+
+/**
+ * @desc    Remove saved location
+ * @route   DELETE /api/user/locations/:locationId
+ * @access  Private
+ */
+const removeSavedLocation = async (req, res, next) => {
+  try {
+    const { locationId } = req.params;
+    const user = await User.findById(req.user.id);
+
+    user.savedLocations = user.savedLocations.filter(
+      loc => loc.id !== locationId
+    );
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Location removed successfully'
+    });
+  } catch (error) {
+    console.error('❌ Remove saved location error:', error);
+    next(error);
+  }
+};
+
+/**
+ * @desc    Set default location
+ * @route   PUT /api/user/locations/:locationId/default
+ * @access  Private
+ */
+const setDefaultLocation = async (req, res, next) => {
+  try {
+    const { locationId } = req.params;
+    const user = await User.findById(req.user.id);
+
+    // Reset all locations to not default
+    user.savedLocations.forEach(loc => {
+      loc.isDefault = false;
+    });
+
+    // Set the specified location as default
+    const location = user.savedLocations.find(loc => loc.id === locationId);
+    if (location) {
+      location.isDefault = true;
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Default location updated successfully'
+    });
+  } catch (error) {
+    console.error('❌ Set default location error:', error);
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get user preferences
+ * @route   GET /api/user/preferences
+ * @access  Private
+ */
+const getPreferences = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const preferences = user.preferences || {
+      notifications: { email: true, push: true },
+      units: 'metric',
+      aqiThreshold: 100
+    };
+
+    res.status(200).json({
+      success: true,
+      data: preferences
+    });
+  } catch (error) {
+    console.error('❌ Get preferences error:', error);
+    next(error);
+  }
+};
+
+/**
+ * @desc    Update user preferences
+ * @route   PUT /api/user/preferences
+ * @access  Private
+ */
+const updatePreferences = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const updates = req.body;
+
+    user.preferences = {
+      ...user.preferences,
+      ...updates
+    };
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      data: user.preferences
+    });
+  } catch (error) {
+    console.error('❌ Update preferences error:', error);
+    next(error);
+  }
+};
+
+/**
+ * @desc    Upload user avatar
+ * @route   POST /api/user/avatar
+ * @access  Private
+ */
+const uploadAvatar = async (req, res, next) => {
+  try {
+    // For now, return a placeholder response
+    // In a real app, you'd handle file upload here
+    res.status(200).json({
+      success: true,
+      data: {
+        avatarUrl: 'https://via.placeholder.com/150'
+      }
+    });
+  } catch (error) {
+    console.error('❌ Upload avatar error:', error);
+    next(error);
+  }
+};
+
+/**
+ * @desc    Export user data
+ * @route   GET /api/user/export
+ * @access  Private
+ */
+const exportData = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    
+    const exportData = {
+      profile: {
+        name: user.name,
+        email: user.email,
+        createdAt: user.createdAt
+      },
+      preferences: user.preferences,
+      savedLocations: user.savedLocations,
+      stats: await User.getUserStats()
+    };
+
+    res.status(200).json({
+      success: true,
+      data: exportData
+    });
+  } catch (error) {
+    console.error('❌ Export data error:', error);
+    next(error);
+  }
+};
+
 module.exports = {
   signup,
   login,
@@ -277,5 +489,13 @@ module.exports = {
   changePassword,
   logout,
   deleteAccount,
-  getUserStats
+  getUserStats,
+  getSavedLocations,
+  addSavedLocation,
+  removeSavedLocation,
+  setDefaultLocation,
+  getPreferences,
+  updatePreferences,
+  uploadAvatar,
+  exportData
 };

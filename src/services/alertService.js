@@ -2,6 +2,8 @@
  * Alert Service - Handles alert settings and notifications
  */
 
+import api from '../utils/api';
+
 class AlertService {
   constructor() {
     this.cache = new Map();
@@ -42,17 +44,10 @@ class AlertService {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/user/alerts`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await api.get('/user/alerts');
 
-      if (response.ok) {
-        const data = await response.json();
+      if (response.status === 200) {
+        const data = response.data;
         
         this.cache.set(cacheKey, {
           data: data.data,
@@ -78,18 +73,10 @@ class AlertService {
    */
   async updateAlertSettings(settings) {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/user/alerts/update`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(settings)
-      });
+      const response = await api.post('/user/alerts/update', settings);
 
-      if (response.ok) {
-        const data = await response.json();
+      if (response.status === 200) {
+        const data = response.data;
         
         // Update cache
         this.cache.set('alert-settings', {
@@ -125,18 +112,10 @@ class AlertService {
    */
   async getCurrentAlerts(latitude, longitude) {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/alerts/current`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ latitude, longitude })
-      });
+      const response = await api.post('/alerts/current', { latitude, longitude });
 
-      if (response.ok) {
-        const data = await response.json();
+      if (response.status === 200) {
+        const data = response.data;
         return { success: true, data: data.data };
       }
       
@@ -156,17 +135,9 @@ class AlertService {
    */
   async markAlertsAsRead(alertIds) {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/alerts/mark-read`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ alertIds })
-      });
+      const response = await api.post('/alerts/mark-read', { alertIds });
 
-      if (response.ok) {
+      if (response.status === 200) {
         return { success: true };
       }
       
@@ -387,6 +358,38 @@ class AlertService {
    */
   clearCache() {
     this.cache.clear();
+    console.log('🗑️ [AlertService] Cache cleared');
+  }
+
+  /**
+   * Clear all browser storage
+   */
+  clearAllStorage() {
+    // Clear localStorage cache keys
+    const cacheKeys = ['alert-settings', 'user-preferences', 'historical-data'];
+    cacheKeys.forEach(key => {
+      if (localStorage.getItem(key)) {
+        localStorage.removeItem(key);
+        console.log(`🗑️ [AlertService] Cleared localStorage: ${key}`);
+      }
+    });
+    
+    // Clear sessionStorage
+    sessionStorage.clear();
+    console.log('🗑️ [AlertService] Cleared sessionStorage');
+    
+    // Clear service worker cache
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        names.forEach(name => {
+          caches.delete(name);
+          console.log(`🗑️ [AlertService] Cleared cache: ${name}`);
+        });
+      });
+    }
+    
+    // Clear internal cache
+    this.clearCache();
   }
 }
 

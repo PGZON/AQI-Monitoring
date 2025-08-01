@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { useUser } from '../context/UserContext';
 import aqiService from '../services/aqiService';
 import alertService from '../services/alertService';
-import analyticsService from '../services/analyticsService';
 import AQICard from '../components/AQICard';
 
 const DashboardPage = () => {
@@ -13,95 +12,37 @@ const DashboardPage = () => {
   
   // State management
   const [aqiData, setAqiData] = useState(null);
+  const [currentLocation, setCurrentLocation] = useState(null);
   const [alerts, setAlerts] = useState({ active: [], recent: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [locationName, setLocationName] = useState('');
   
-  // Use ref to prevent infinite loops - refs don't trigger re-renders
-  const hasInitialized = useRef(false);
-  const isInitializing = useRef(false);
+  // BULLETPROOF: Single initialization flag that NEVER causes re-renders
+  const initStarted = useRef(false);
 
-  // Simple initialization - only runs once when user is available
+  // REDESIGNED: Completely isolated initialization - ZERO DEPENDENCIES
   useEffect(() => {
-    console.log('🔥 [Dashboard] useEffect triggered - user:', !!user, 'user object:', user, 'hasInitialized:', hasInitialized.current, 'isInitializing:', isInitializing.current);
+    console.log('🔥 [Dashboard] useEffect - initStarted:', initStarted.current, 'user:', !!user);
     
-    // Clear any existing cache on page load/refresh
-    if (typeof window !== 'undefined') {
-      // Clear localStorage cache
-      const cacheKeys = ['alert-settings', 'historical-data', 'user-preferences'];
-      cacheKeys.forEach(key => {
-        if (localStorage.getItem(key)) {
-          localStorage.removeItem(key);
-          console.log(`🗑️ [Dashboard] Cleared cache: ${key}`);
-        }
-      });
-      
-      // Clear sessionStorage
-      sessionStorage.clear();
-      console.log('🗑️ [Dashboard] Cleared sessionStorage');
-      
-      // Clear any service worker cache
-      if ('caches' in window) {
-        caches.keys().then(names => {
-          names.forEach(name => {
-            caches.delete(name);
-            console.log(`🗑️ [Dashboard] Cleared cache: ${name}`);
-          });
-        });
-      }
-    }
-    
-    // Multiple guards to prevent any loops
-    if (!user) {
-      console.log('⏭️ [Dashboard] Skipping - no user');
-      return;
-    }
-    
-    // Simplified user check - just ensure user exists
-    if (hasInitialized.current) {
-      console.log('⏭️ [Dashboard] Skipping - already initialized');
-      return;
-    }
-    
-    if (isInitializing.current) {
-      console.log('⏭️ [Dashboard] Skipping - already initializing');
+    // CRITICAL: Only run if user exists and we haven't started initialization  
+    if (!user || initStarted.current) {
+      console.log('⏭️ [Dashboard] Skipping - no user or already started');
       return;
     }
 
-    // Mark as initializing immediately
-    isInitializing.current = true;
-    console.log('🔒 [Dashboard] Starting initialization...');
+    // LOCK: Set flag immediately to prevent any re-runs
+    initStarted.current = true;
+    console.log('🔒 [Dashboard] Initialization LOCKED - can never run again');
 
-    const initializeDashboard = async () => {
-      let timeoutId; // Declare timeoutId in proper scope
-      
+    // SELF-CONTAINED: All logic in one place, no external calls
+    (async () => {
       try {
-        console.log('🚀 [Dashboard] Loading dashboard data...');
+        console.log('🚀 [Dashboard] Starting ONE-TIME initialization...');
         setLoading(true);
         setError(null);
 
-        // Add a timeout to prevent infinite loading
-        timeoutId = setTimeout(() => {
-          console.warn('⚠️ [Dashboard] Initialization timeout - forcing completion');
-          hasInitialized.current = true;
-          isInitializing.current = false;
-          setLoading(false);
-          if (!aqiData) {
-            setAqiData({
-              aqi: { index: 75, category: 'Moderate' },
-              location: { name: 'Default Location' },
-              pollutants: {
-                pm25: { value: 30, unit: 'μg/m³' },
-                pm10: { value: 40, unit: 'μg/m³' }
-              }
-            });
-            setLastUpdated(new Date());
-          }
-        }, 5000); // 5 second timeout (reduced from 10)
-
-        // Get location
+        // Step 1: Get location (completely inline)
         let location = null;
         
         // Try user profile first
@@ -111,7 +52,6 @@ const DashboardPage = () => {
         } else {
           // Try geolocation
           try {
-            console.log('🌍 [Dashboard] Attempting geolocation...');
             location = await new Promise((resolve, reject) => {
               if (!navigator.geolocation) {
                 reject(new Error('Geolocation not supported'));
@@ -126,10 +66,7 @@ const DashboardPage = () => {
                     name: 'Current Location'
                   });
                 },
-                (error) => {
-                  console.error('🌍 [Dashboard] Geolocation error:', error);
-                  reject(new Error('Geolocation failed'));
-                },
+                () => reject(new Error('Geolocation failed')),
                 { timeout: 5000 }
               );
             });
@@ -145,13 +82,12 @@ const DashboardPage = () => {
           throw new Error('Could not determine location');
         }
 
-        setLocationName(location.name);
+        setCurrentLocation(location);
 
-        // Load AQI data
+        // Step 2: Load AQI data (completely inline)
         console.log(`🌬️ [Dashboard] Loading AQI for ${location.latitude}, ${location.longitude}`);
         try {
           const aqiResult = await aqiService.getCurrentAQI(location.latitude, location.longitude);
-          console.log('📥 [Dashboard] AQI result:', aqiResult);
           if (aqiResult.success) {
             console.log('✅ [Dashboard] AQI data loaded');
             setAqiData(aqiResult.data);
@@ -173,11 +109,10 @@ const DashboardPage = () => {
           setLastUpdated(new Date());
         }
 
-        // Load alerts
+        // Step 3: Load alerts (completely inline) 
         console.log(`🚨 [Dashboard] Loading alerts for ${location.latitude}, ${location.longitude}`);
         try {
           const alertResult = await alertService.getCurrentAlerts(location.latitude, location.longitude);
-          console.log('📥 [Dashboard] Alert result:', alertResult);
           if (alertResult.success) {
             console.log('✅ [Dashboard] Alerts loaded');
             setAlerts(alertResult.data);
@@ -192,86 +127,20 @@ const DashboardPage = () => {
       } catch (error) {
         console.error('💥 [Dashboard] Initialization failed:', error);
         setError('Failed to load dashboard data');
-        
-        // Set fallback data even on error
-        if (!aqiData) {
-          console.log('🔄 [Dashboard] Setting fallback data due to error');
-          setAqiData({
-            aqi: { index: 75, category: 'Moderate' },
-            location: { name: 'Default Location' },
-            pollutants: {
-              pm25: { value: 30, unit: 'μg/m³' },
-              pm10: { value: 40, unit: 'μg/m³' }
-            }
-          });
-          setLastUpdated(new Date());
-        }
       } finally {
-        // Mark as initialized and clear initializing flag
-        hasInitialized.current = true;
-        isInitializing.current = false;
         setLoading(false);
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-        }
         console.log('🏁 [Dashboard] Loading state cleared');
       }
-    };
+    })();
 
-    initializeDashboard();
-  }, [user]); // Only depend on user - no other dependencies
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // EMPTY DEPS: Will only run once when component mounts
 
   const handleRefresh = () => {
-    console.log('🔄 [Dashboard] Manual refresh');
-    // Reset flags for manual refresh
-    hasInitialized.current = false;
-    isInitializing.current = false;
+    console.log('🔄 [Dashboard] Manual refresh - RESETTING initialization flag');
+    initStarted.current = false;
     setLoading(true);
-    setError(null);
-    setAqiData(null);
-    setAlerts({ active: [], recent: [] });
-  };
-
-  const handleClearCache = () => {
-    console.log('🗑️ [Dashboard] Clearing all cache...');
-    
-    // Clear all service caches
-    alertService.clearAllStorage();
-    analyticsService.clearAllStorage();
-    
-    // Clear localStorage
-    const cacheKeys = ['alert-settings', 'historical-data', 'user-preferences', 'analytics-data'];
-    cacheKeys.forEach(key => {
-      if (localStorage.getItem(key)) {
-        localStorage.removeItem(key);
-        console.log(`🗑️ [Dashboard] Cleared localStorage: ${key}`);
-      }
-    });
-    
-    // Clear sessionStorage
-    sessionStorage.clear();
-    console.log('🗑️ [Dashboard] Cleared sessionStorage');
-    
-    // Clear service worker cache
-    if ('caches' in window) {
-      caches.keys().then(names => {
-        names.forEach(name => {
-          caches.delete(name);
-          console.log(`🗑️ [Dashboard] Cleared cache: ${name}`);
-        });
-      });
-    }
-    
-    // Reset dashboard state
-    hasInitialized.current = false;
-    isInitializing.current = false;
-    setLoading(true);
-    setError(null);
-    setAqiData(null);
-    setAlerts({ active: [], recent: [] });
-    
-    console.log('✅ [Dashboard] Cache cleared and dashboard reset');
+    // Force component re-render to trigger useEffect
+    window.location.reload();
   };
 
   if (loading && !aqiData) {
@@ -309,14 +178,6 @@ const DashboardPage = () => {
                 {loading ? 'Refreshing...' : 'Refresh'}
               </button>
               
-              <button
-                onClick={handleClearCache}
-                className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors text-sm"
-                title="Clear all cache and reload data"
-              >
-                🗑️ Clear Cache
-              </button>
-              
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-700">
                   Welcome, {user?.name || user?.email || 'User'}
@@ -343,13 +204,6 @@ const DashboardPage = () => {
                 <p className="text-sm">{error}</p>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Location Info */}
-        {locationName && (
-          <div className="mb-4">
-            <p className="text-gray-600">Current location: {locationName}</p>
           </div>
         )}
 

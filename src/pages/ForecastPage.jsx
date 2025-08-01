@@ -3,12 +3,11 @@
  * Interactive page combining pollution heatmap and advanced ML forecast visualization
  */
 
-import React, { useState, useCallback, memo } from 'react';
+import React, { useState, useCallback, memo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import HeatmapLazy from '../components/HeatmapLazy';
-import { ForecastDashboardLazy } from '../components/ChartsLazy';
-import { LazyLoadWrapper } from '../hooks/useIntersectionObserver';
+import Heatmap from '../components/Heatmap';
+import ForecastDashboard from '../components/ForecastDashboard';
 import useGeolocation from '../hooks/useGeolocation';
 
 /**
@@ -20,18 +19,89 @@ const LocationSelector = memo(({
   userLocation, 
   onUseCurrentLocation 
 }) => {
-  const predefinedLocations = [
-    { id: 'ny', name: 'New York, NY', coordinates: { lat: 40.7128, lng: -74.0060 } },
-    { id: 'la', name: 'Los Angeles, CA', coordinates: { lat: 34.0522, lng: -118.2437 } },
-    { id: 'chicago', name: 'Chicago, IL', coordinates: { lat: 41.8781, lng: -87.6298 } },
-    { id: 'houston', name: 'Houston, TX', coordinates: { lat: 29.7604, lng: -95.3698 } },
-    { id: 'phoenix', name: 'Phoenix, AZ', coordinates: { lat: 33.4484, lng: -112.0740 } },
-    { id: 'philly', name: 'Philadelphia, PA', coordinates: { lat: 39.9526, lng: -75.1652 } },
-    { id: 'san_antonio', name: 'San Antonio, TX', coordinates: { lat: 29.4241, lng: -98.4936 } },
-    { id: 'san_diego', name: 'San Diego, CA', coordinates: { lat: 32.7157, lng: -117.1611 } },
-    { id: 'dallas', name: 'Dallas, TX', coordinates: { lat: 32.7767, lng: -96.7970 } },
-    { id: 'san_jose', name: 'San Jose, CA', coordinates: { lat: 37.3382, lng: -121.8863 } }
-  ];
+  const [cityInput, setCityInput] = useState('');
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationError, setValidationError] = useState('');
+  const validationTimeoutRef = useRef(null);
+
+  /**
+   * Validate city name and get coordinates
+   */
+  const validateCity = useCallback(async (cityName) => {
+    if (!cityName.trim()) {
+      setValidationError('');
+      return;
+    }
+
+    setIsValidating(true);
+    setValidationError('');
+
+    // Clear previous timeout
+    if (validationTimeoutRef.current) {
+      clearTimeout(validationTimeoutRef.current);
+    }
+
+    // Debounce validation
+    validationTimeoutRef.current = setTimeout(async () => {
+      try {
+        // Use a geocoding service to validate city
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityName)}&limit=1`
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data && data.length > 0) {
+            const location = data[0];
+            const cityInfo = {
+              id: `custom-${Date.now()}`,
+              name: location.display_name.split(',')[0], // Get city name
+              coordinates: {
+                lat: parseFloat(location.lat),
+                lng: parseFloat(location.lon)
+              },
+              fullName: location.display_name
+            };
+            
+            onLocationChange(cityInfo);
+            setValidationError('');
+          } else {
+            setValidationError('City not found. Please try a different city name.');
+            onLocationChange(null);
+          }
+        } else {
+          setValidationError('Unable to validate city. Please try again.');
+          onLocationChange(null);
+        }
+      } catch (error) {
+        console.error('City validation error:', error);
+        setValidationError('Error validating city. Please try again.');
+        onLocationChange(null);
+      } finally {
+        setIsValidating(false);
+      }
+    }, 1000); // 1 second debounce
+  }, [onLocationChange]);
+
+  /**
+   * Handle city input change
+   */
+  const handleCityInputChange = useCallback((e) => {
+    const value = e.target.value;
+    setCityInput(value);
+    validateCity(value);
+  }, [validateCity]);
+
+  /**
+   * Handle form submission
+   */
+  const handleSubmit = useCallback((e) => {
+    e.preventDefault();
+    if (cityInput.trim()) {
+      validateCity(cityInput.trim());
+    }
+  }, [cityInput, validateCity]);
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
@@ -62,26 +132,27 @@ const LocationSelector = memo(({
           </button>
         )}
 
-        {/* Predefined Locations Dropdown */}
-        <div>
-          <select
-            value={selectedLocation?.id || ''}
-            onChange={(e) => {
-              const location = predefinedLocations.find(loc => loc.id === e.target.value);
-              if (location) {
-                onLocationChange(location);
-              }
-            }}
-            className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="">Select a city...</option>
-            {predefinedLocations.map(location => (
-              <option key={location.id} value={location.id}>
-                {location.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* City Input Field */}
+        <form onSubmit={handleSubmit} className="flex-1 max-w-md">
+          <div className="relative">
+            <input
+              type="text"
+              value={cityInput}
+              onChange={handleCityInputChange}
+              placeholder="Enter city name (e.g., London, Tokyo, Mumbai)..."
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+              disabled={isValidating}
+            />
+            {isValidating && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              </div>
+            )}
+          </div>
+          {validationError && (
+            <p className="text-red-500 text-xs mt-1">{validationError}</p>
+          )}
+        </form>
 
         {/* Selected Location Display */}
         {selectedLocation && (
@@ -95,7 +166,11 @@ const LocationSelector = memo(({
             </svg>
             <span className="text-sm text-gray-700">{selectedLocation.name}</span>
             <button
-              onClick={() => onLocationChange(null)}
+              onClick={() => {
+                onLocationChange(null);
+                setCityInput('');
+                setValidationError('');
+              }}
               className="text-gray-400 hover:text-gray-600"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,12 +180,6 @@ const LocationSelector = memo(({
           </div>
         )}
       </div>
-
-      {selectedLocation && (
-        <div className="mt-3 text-xs text-gray-500">
-          Coordinates: {selectedLocation.coordinates.lat.toFixed(4)}, {selectedLocation.coordinates.lng.toFixed(4)}
-        </div>
-      )}
     </div>
   );
 });
@@ -293,26 +362,26 @@ const ForecastPage = () => {
                 Interactive map showing current air quality conditions. Click any marker for detailed information.
               </p>
               
-              <LazyLoadWrapper height="500px" className="mb-6">
-                <HeatmapLazy
+              <div className="mb-6">
+                <Heatmap
                   center={selectedLocation ? [selectedLocation.coordinates.lat, selectedLocation.coordinates.lng] : undefined}
                   onLocationSelect={handleLocationSelect}
                   className="w-full"
                 />
-              </LazyLoadWrapper>
+              </div>
             </div>
           </div>
 
           {/* Enhanced Forecast Dashboard Section */}
           <div className="space-y-4">
-            <LazyLoadWrapper height="400px">
-              <ForecastDashboardLazy
+            <div>
+              <ForecastDashboard
                 location={selectedLocation}
                 height={400}
                 initialTimeRange="24h"
                 initialPollutant="aqi"
               />
-            </LazyLoadWrapper>
+            </div>
             
             {/* Enhanced Features Info Panel */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">

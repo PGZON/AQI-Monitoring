@@ -4,13 +4,12 @@
  */
 
 import React, { memo } from 'react';
-import { useLocation } from '../context/UserContext';
+import { useLocation } from 'react-router-dom';
 import { useAnalyticsData } from '../hooks/useAnalyticsData';
-import { AQILineChartLazy } from '../components/ChartsLazy';
+import AQILineChart from '../components/Analytics/AQILineChart';
 import WeeklyComparisonCard from '../components/Analytics/WeeklyComparisonCard';
 import LocationHistoryList from '../components/Analytics/LocationHistoryList';
 import PersonalInsightsBanner from '../components/Analytics/PersonalInsightsBanner';
-import { LazyLoadWrapper } from '../hooks/useIntersectionObserver';
 
 /**
  * Analytics Header Component - Memoized for performance
@@ -230,8 +229,8 @@ const AnalyticsPage = () => {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Historical Chart - Takes up 2 columns */}
           <div className="xl:col-span-2">
-            <LazyLoadWrapper height="400px">
-              <AQILineChartLazy
+            <div>
+              <AQILineChart
                 data={historicalData?.historical || []}
                 height={400}
                 loading={loading.historical}
@@ -239,7 +238,7 @@ const AnalyticsPage = () => {
                 showDateRange={true}
                 showPollutants={true}
               />
-            </LazyLoadWrapper>
+            </div>
           </div>
 
           {/* Weekly Comparison - Takes up 1 column */}

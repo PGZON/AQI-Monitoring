@@ -15,7 +15,7 @@ class ForecastService {
    */
   async getForecastData(lat, lng, hours = 24) {
     try {
-      const response = await api.get('/api/forecast', {
+      const response = await api.get('/forecast', {
         params: { lat, lng, hours }
       });
       
@@ -35,7 +35,7 @@ class ForecastService {
    */
   async getMLPrediction(lat, lng, targetTime) {
     try {
-      const response = await api.get('/api/ml/predict', {
+      const response = await api.get('/ml/predict', {
         params: { lat, lng, target_time: targetTime }
       });
       
@@ -68,7 +68,7 @@ class ForecastService {
    */
   async getHeatmapData(bounds, limit = 50) {
     try {
-      const response = await api.get('/api/heatmap', {
+      const response = await api.get('/heatmap', {
         params: { 
           ...bounds, 
           limit 
@@ -91,7 +91,7 @@ class ForecastService {
    */
   async getHistoricalData(lat, lng, days = 7) {
     try {
-      const response = await api.get('/api/history', {
+      const response = await api.get('/history', {
         params: { lat, lng, days }
       });
       
@@ -130,7 +130,7 @@ class ForecastService {
    */
   async getWeatherForecast(lat, lng, hours = 24) {
     try {
-      const response = await api.get('/api/weather/forecast', {
+      const response = await api.get('/weather/forecast', {
         params: { lat, lng, hours }
       });
       
@@ -169,7 +169,7 @@ class ForecastService {
    */
   async getAQIAlerts(lat, lng) {
     try {
-      const response = await api.get('/api/alerts', {
+      const response = await api.get('/alerts', {
         params: { lat, lng }
       });
       

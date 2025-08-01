@@ -2,7 +2,7 @@
  * User Context for managing user data, locations, and preferences globally
  */
 
-import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react';
 import userService from '../services/userService';
 
 // Initial state
@@ -169,6 +169,9 @@ export const useUser = () => {
 // Provider component
 export const UserProvider = ({ children }) => {
   const [state, dispatch] = useReducer(userReducer, initialState);
+  
+  // Use ref to prevent infinite loops - moved to component level
+  const hasInitialized = useRef(false);
 
   // Helper function to set loading state
   const setLoading = useCallback((key, value) => {
@@ -368,23 +371,46 @@ export const UserProvider = ({ children }) => {
   /**
    * Initialize user data on app start
    */
-  const initializeUserData = useCallback(async () => {
-    try {
-      await Promise.all([
-        loadProfile(),
-        loadSavedLocations(),
-        loadPreferences(),
-        loadStats()
-      ]);
-    } catch (error) {
-      console.error('Failed to initialize user data:', error);
-    }
-  }, [loadProfile, loadSavedLocations, loadPreferences, loadStats]);
-
-  // Initialize data on mount
+  // Initialize data on mount - FIXED: Remove dependency to prevent infinite loop
   useEffect(() => {
-    initializeUserData();
-  }, [initializeUserData]);
+    console.log('🔄 [UserContext] Initializing user data...');
+    
+    if (hasInitialized.current) {
+      console.log('⏭️ [UserContext] Already initialized, skipping');
+      return;
+    }
+    
+    hasInitialized.current = true;
+    
+    // Simple initialization without complex dependencies
+    const initializeUserData = async () => {
+      try {
+        console.log('📊 [UserContext] Loading user profile...');
+        await loadProfile();
+        
+        console.log('📍 [UserContext] Loading saved locations...');
+        await loadSavedLocations();
+        
+        console.log('⚙️ [UserContext] Loading preferences...');
+        await loadPreferences();
+        
+        console.log('📈 [UserContext] Loading stats...');
+        await loadStats();
+        
+        console.log('✅ [UserContext] User data initialization complete');
+      } catch (error) {
+        console.error('❌ [UserContext] Failed to initialize user data:', error);
+      }
+    };
+    
+    // Add a small delay to prevent simultaneous requests with AuthContext
+    const timer = setTimeout(() => {
+      initializeUserData();
+    }, 500); // Increased delay to 500ms
+    
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array to run only once
 
   // Context value
   const contextValue = {
@@ -402,7 +428,6 @@ export const UserProvider = ({ children }) => {
     updatePreferences,
     loadStats,
     resetUserData,
-    initializeUserData,
     
     // Utilities
     clearError
