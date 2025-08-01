@@ -30,8 +30,11 @@ const MapBoundsHandler = ({ onBoundsChange }) => {
   const map = useMap();
 
   useEffect(() => {
+    if (!map) return;
+    
     const handleBoundsChange = () => {
       const bounds = map.getBounds();
+      // Use callback with useCallback and proper dependencies in parent
       onBoundsChange({
         north: bounds.getNorth(),
         south: bounds.getSouth(),
@@ -43,14 +46,11 @@ const MapBoundsHandler = ({ onBoundsChange }) => {
     map.on('moveend', handleBoundsChange);
     map.on('zoomend', handleBoundsChange);
     
-    // Initial bounds
-    handleBoundsChange();
-
     return () => {
       map.off('moveend', handleBoundsChange);
       map.off('zoomend', handleBoundsChange);
     };
-  }, [map, onBoundsChange]);
+  }, [map]); // Remove onBoundsChange dependency, handle in parent with useCallback
 
   return null;
 };

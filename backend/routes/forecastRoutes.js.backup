@@ -81,6 +81,18 @@ router.post('/predict',
 );
 
 /**
+ * @route   GET /api/forecast/:city
+ * @desc    Get AQI forecast for a specific city (convenience endpoint)
+ * @access  Public
+ * @params  city (required), days (optional query param)
+ */
+router.get('/:city', 
+  validateCityParam,
+  validateForecastQuery,
+  forecastController.getForecastByCity
+);
+
+/**
  * @route   POST /api/forecast/train
  * @desc    Train ML models for a specific location
  * @access  Private (Admin only - training is resource intensive)
@@ -91,144 +103,6 @@ router.post('/train',
   authorizeRoles('admin'), 
   validateTrainingRequest, 
   forecastController.trainModel
-);
-
-/**
- * @route   GET /api/forecast/models
- * @desc    Get information about available ML models
- * @access  Private (Admin only)
- */
-router.get('/models', 
-  protect,
-  authorizeRoles('admin'), 
-  forecastController.getModelsInfo
-);
-
-/**
- * @route   POST /api/forecast/retrain-all
- * @desc    Retrain all ML models (bulk operation)
- * @access  Private (Admin only)
- */
-router.post('/retrain-all', 
-  protect,
-  authorizeRoles('admin'), 
-  forecastController.retrainAllModels
-);
-
-/**
- * @route   GET /api/forecast/health
- * @desc    Check ML service health and capabilities
- * @access  Public
- */
-router.get('/health', 
-  forecastController.getMLHealth
-);
-
-/**
- * @route   GET /api/forecast/
- * @desc    Forecast service documentation and endpoints
- * @access  Public
- */
-router.get('/', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'AQI ML Forecasting Service',
-    version: '1.0.0',
-    ml_service_url: process.env.ML_SERVICE_URL || 'http://localhost:5001',
-    endpoints: {
-      predict: {
-        method: 'POST',
-        path: '/api/forecast/predict',
-        description: 'Get AQI forecast using ML models',
-        access: 'Public',
-        body: {
-          city: 'string (optional)',
-          lat: 'number (optional)',
-          lon: 'number (optional)', 
-          days: 'number (1-7, default: 3)',
-          autoTrain: 'boolean (default: true)'
-        }
-      },
-      city_forecast: {
-        method: 'GET',
-        path: '/api/forecast/:city',
-        description: 'Get forecast for specific city',
-        access: 'Public',
-        params: { city: 'string (required)' },
-        query: { days: 'number (1-7, default: 3)' }
-      },
-      train: {
-        method: 'POST',
-        path: '/api/forecast/train',
-        description: 'Train ML models for location',
-        access: 'Admin only'
-      },
-      models: {
-        method: 'GET',
-        path: '/api/forecast/models',
-        description: 'Get ML models information',
-        access: 'Admin only'
-      },
-      retrain_all: {
-        method: 'POST',
-        path: '/api/forecast/retrain-all',
-        description: 'Retrain all ML models',
-        access: 'Admin only'
-      },
-      health: {
-        method: 'GET',
-        path: '/api/forecast/health',
-        description: 'ML service health check',
-        access: 'Public'
-      }
-    },
-    features: [
-      'Multi-model ML forecasting (Linear Regression, LSTM)',
-      'Automatic model training and retraining',
-      'Location-based predictions (city or coordinates)',
-      'Fallback forecasting when ML service unavailable',
-      'Forecast validation and confidence scoring',
-      'Trend analysis and prediction reliability',
-      'Support for 1-7 day forecasts'
-    ],
-    example_requests: {
-      predict_by_city: {
-        method: 'POST',
-        url: '/api/forecast/predict',
-        body: {
-          city: 'Mumbai',
-          days: 3,
-          autoTrain: true
-        }
-      },
-      predict_by_coordinates: {
-        method: 'POST',
-        url: '/api/forecast/predict',
-        body: {
-          lat: 19.0760,
-          lon: 72.8777,
-          days: 5
-        }
-      },
-      city_forecast: {
-        method: 'GET',
-        url: '/api/forecast/Mumbai?days=3'
-      }
-    }
-  });
-});
-
-/**
- * @route   GET /api/forecast/:city
- * @desc    Get AQI forecast for a specific city (convenience endpoint)
- * @access  Public
- * @params  city (required), days (optional query param)
- * IMPORTANT: This route MUST be last to avoid conflicts with specific routes above
- */
-router.get('/:city', 
-  validateCityParam,
-  validateForecastQuery,
-  forecastController.getForecastByCity
 );
 
 /**

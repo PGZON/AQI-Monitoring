@@ -3,12 +3,13 @@
  * Interactive page combining pollution heatmap and advanced ML forecast visualization
  */
 
-import React, { useState, useCallback, memo, useRef } from 'react';
+import React, { useState, useCallback, memo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Heatmap from '../components/Heatmap';
 import ForecastDashboard from '../components/ForecastDashboard';
 import useGeolocation from '../hooks/useGeolocation';
+import { useDebounce } from '../hooks/useDebounce';
 
 /**
  * Location Selector Component - Memoized for performance
@@ -22,31 +23,29 @@ const LocationSelector = memo(({
   const [cityInput, setCityInput] = useState('');
   const [isValidating, setIsValidating] = useState(false);
   const [validationError, setValidationError] = useState('');
-  const validationTimeoutRef = useRef(null);
+  
+  // ✅ BULLETPROOF: Debounce city input to prevent API spam
+  const debouncedCityInput = useDebounce(cityInput, 800); // Wait 800ms after user stops typing
 
   /**
-   * Validate city name and get coordinates
+   * ✅ FIXED: Validate city with debounced input - no more API spam!
    */
-  const validateCity = useCallback(async (cityName) => {
-    if (!cityName.trim()) {
+  useEffect(() => {
+    const validateDebouncedCity = async () => {
+      if (!debouncedCityInput.trim()) {
+        setValidationError('');
+        onLocationChange(null);
+        return;
+      }
+
+      console.log(`🔍 [ForecastPage] Validating city: "${debouncedCityInput}"`);
+      setIsValidating(true);
       setValidationError('');
-      return;
-    }
 
-    setIsValidating(true);
-    setValidationError('');
-
-    // Clear previous timeout
-    if (validationTimeoutRef.current) {
-      clearTimeout(validationTimeoutRef.current);
-    }
-
-    // Debounce validation
-    validationTimeoutRef.current = setTimeout(async () => {
       try {
         // Use a geocoding service to validate city
         const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityName)}&limit=1`
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(debouncedCityInput)}&limit=1`
         );
         
         if (response.ok) {
@@ -64,6 +63,7 @@ const LocationSelector = memo(({
               fullName: location.display_name
             };
             
+            console.log('✅ [ForecastPage] City found:', cityInfo.name);
             onLocationChange(cityInfo);
             setValidationError('');
           } else {
@@ -75,33 +75,34 @@ const LocationSelector = memo(({
           onLocationChange(null);
         }
       } catch (error) {
-        console.error('City validation error:', error);
+        console.error('❌ [ForecastPage] City validation error:', error);
         setValidationError('Error validating city. Please try again.');
         onLocationChange(null);
       } finally {
         setIsValidating(false);
       }
-    }, 1000); // 1 second debounce
-  }, [onLocationChange]);
+    };
+
+    validateDebouncedCity();
+  }, [debouncedCityInput, onLocationChange]); // Only runs when debounced input changes
 
   /**
-   * Handle city input change
+   * ✅ FIXED: Handle city input change - no validation here, debouncing handles it
    */
   const handleCityInputChange = useCallback((e) => {
     const value = e.target.value;
     setCityInput(value);
-    validateCity(value);
-  }, [validateCity]);
+    // ✅ No validateCity() call - debouncing handles validation automatically
+  }, []);
 
   /**
-   * Handle form submission
+   * ✅ FIXED: Handle form submission
    */
   const handleSubmit = useCallback((e) => {
     e.preventDefault();
-    if (cityInput.trim()) {
-      validateCity(cityInput.trim());
-    }
-  }, [cityInput, validateCity]);
+    // ✅ No validateCity() call - debouncing already validated the input
+    console.log('🚀 [ForecastPage] Form submitted with city:', cityInput);
+  }, [cityInput]);
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">

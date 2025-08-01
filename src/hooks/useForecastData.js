@@ -23,6 +23,7 @@ const useForecastData = ({
   
   const refreshIntervalRef = useRef(null);
   const locationRef = useRef(location);
+  const loadingRef = useRef(false); // FIXED: Use ref to prevent concurrent calls without dependency issues
 
   // Update location ref when location changes
   useEffect(() => {
@@ -40,77 +41,84 @@ const useForecastData = ({
     return ranges[range] || 24;
   }, []);
 
-  // Fetch forecast data
-  const fetchForecastData = useCallback(async (forceRefresh = false) => {
-    if (!locationRef.current || (!forceRefresh && loading)) {
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const hours = getHoursFromTimeRange(timeRange);
-      const { lat, lng } = locationRef.current;
-
-      // Try to get real forecast data
-      let rawData;
-      try {
-        rawData = await forecastService.getForecastData(lat, lng, hours);
-      } catch (apiError) {
-        console.warn('Forecast API failed, using mock data:', apiError);
-        rawData = generateMockMLForecast(hours, { lat, lng });
-      }
-
-      // If no data or insufficient data, generate mock data
-      if (!rawData || rawData.length === 0) {
-        console.warn('No forecast data received, generating mock data');
-        rawData = generateMockMLForecast(hours, { lat, lng });
-      }
-
-      // Format data for visualization
-      const formattedData = formatForecastData(rawData);
-      
-      // Calculate average confidence
-      const avgConfidence = formattedData.reduce((sum, item) => 
-        sum + (item.confidence || 0), 0) / formattedData.length;
-
-      setData(formattedData);
-      setConfidence(avgConfidence);
-      setLastUpdated(new Date().toISOString());
-      setError(null);
-
-    } catch (error) {
-      console.error('Failed to fetch forecast data:', error);
-      
-      // Fallback to mock data
-      try {
-        const hours = getHoursFromTimeRange(timeRange);
-        const { lat, lng } = locationRef.current;
-        const mockData = generateMockMLForecast(hours, { lat, lng });
-        const formattedData = formatForecastData(mockData);
-        
-        setData(formattedData);
-        setConfidence(0.75); // Default confidence for mock data
-        setLastUpdated(new Date().toISOString());
-        setError('Using sample forecast data. Real-time predictions unavailable.');
-      } catch (fallbackError) {
-        console.error('Failed to generate mock forecast data:', fallbackError);
-        setError('Unable to load forecast data. Please try again.');
-        setData([]);
-        setConfidence(0);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [timeRange, loading, getHoursFromTimeRange]);
-
-  // Auto-refresh logic
+  // Auto-refresh logic - FIXED: Use stable callback with refs
   useEffect(() => {
-    if (autoRefresh && refreshInterval > 0) {
-      refreshIntervalRef.current = setInterval(() => {
-        fetchForecastData(false);
-      }, refreshInterval);
+    if (autoRefresh && refreshInterval > 0 && location) {      
+      const intervalCallback = () => {
+        // Use refs to access current values without dependencies
+        if (locationRef.current) {
+          const currentTime = Date.now();
+          const lastUpdateTime = lastUpdated ? new Date(lastUpdated).getTime() : 0;
+          
+          // Only refresh if enough time has passed to prevent spam
+          if (currentTime - lastUpdateTime > refreshInterval) {
+            // Create a local version of fetchForecastData to avoid dependency issues
+            const localFetchForecast = async () => {
+              if (!locationRef.current || loadingRef.current) {
+                return;
+              }
+
+              loadingRef.current = true;
+              setLoading(true);
+              setError(null);
+
+              try {
+                const hours = getHoursFromTimeRange(timeRange);
+                const { lat, lng } = locationRef.current;
+
+                let rawData;
+                try {
+                  rawData = await forecastService.getForecastData(lat, lng, hours);
+                } catch (apiError) {
+                  console.warn('Forecast API failed, using mock data:', apiError);
+                  rawData = generateMockMLForecast(hours, { lat, lng });
+                }
+
+                if (!rawData || rawData.length === 0) {
+                  console.warn('No forecast data received, generating mock data');
+                  rawData = generateMockMLForecast(hours, { lat, lng });
+                }
+
+                const formattedData = formatForecastData(rawData);
+                const avgConfidence = formattedData.reduce((sum, item) => 
+                  sum + (item.confidence || 0), 0) / formattedData.length;
+
+                setData(formattedData);
+                setConfidence(avgConfidence);
+                setLastUpdated(new Date().toISOString());
+                setError(null);
+
+              } catch (error) {
+                console.error('Failed to fetch forecast data:', error);
+                
+                try {
+                  const hours = getHoursFromTimeRange(timeRange);
+                  const { lat, lng } = locationRef.current;
+                  const mockData = generateMockMLForecast(hours, { lat, lng });
+                  const formattedData = formatForecastData(mockData);
+                  
+                  setData(formattedData);
+                  setConfidence(0.75);
+                  setLastUpdated(new Date().toISOString());
+                  setError('Using sample forecast data. Real-time predictions unavailable.');
+                } catch (fallbackError) {
+                  console.error('Failed to generate mock forecast data:', fallbackError);
+                  setError('Unable to load forecast data. Please try again.');
+                  setData([]);
+                  setConfidence(0);
+                }
+              } finally {
+                loadingRef.current = false;
+                setLoading(false);
+              }
+            };
+
+            localFetchForecast();
+          }
+        }
+      };
+
+      refreshIntervalRef.current = setInterval(intervalCallback, refreshInterval);
 
       return () => {
         if (refreshIntervalRef.current) {
@@ -118,14 +126,75 @@ const useForecastData = ({
         }
       };
     }
-  }, [autoRefresh, refreshInterval, fetchForecastData]);
+  }, [autoRefresh, refreshInterval, location, lastUpdated, timeRange, getHoursFromTimeRange]); // FIXED: All stable dependencies
 
-  // Initial data fetch and when dependencies change
+  // Initial data fetch and when dependencies change - FIXED: Direct implementation to avoid callback dependencies
   useEffect(() => {
     if (location) {
-      fetchForecastData(true);
+      // Direct implementation to avoid fetchForecastData dependency
+      const initialFetch = async () => {
+        if (loadingRef.current) {
+          return;
+        }
+
+        loadingRef.current = true;
+        setLoading(true);
+        setError(null);
+
+        try {
+          const hours = getHoursFromTimeRange(timeRange);
+          const { lat, lng } = location;
+
+          let rawData;
+          try {
+            rawData = await forecastService.getForecastData(lat, lng, hours);
+          } catch (apiError) {
+            console.warn('Forecast API failed, using mock data:', apiError);
+            rawData = generateMockMLForecast(hours, { lat, lng });
+          }
+
+          if (!rawData || rawData.length === 0) {
+            console.warn('No forecast data received, generating mock data');
+            rawData = generateMockMLForecast(hours, { lat, lng });
+          }
+
+          const formattedData = formatForecastData(rawData);
+          const avgConfidence = formattedData.reduce((sum, item) => 
+            sum + (item.confidence || 0), 0) / formattedData.length;
+
+          setData(formattedData);
+          setConfidence(avgConfidence);
+          setLastUpdated(new Date().toISOString());
+          setError(null);
+
+        } catch (error) {
+          console.error('Failed to fetch forecast data:', error);
+          
+          try {
+            const hours = getHoursFromTimeRange(timeRange);
+            const { lat, lng } = location;
+            const mockData = generateMockMLForecast(hours, { lat, lng });
+            const formattedData = formatForecastData(mockData);
+            
+            setData(formattedData);
+            setConfidence(0.75);
+            setLastUpdated(new Date().toISOString());
+            setError('Using sample forecast data. Real-time predictions unavailable.');
+          } catch (fallbackError) {
+            console.error('Failed to generate mock forecast data:', fallbackError);
+            setError('Unable to load forecast data. Please try again.');
+            setData([]);
+            setConfidence(0);
+          }
+        } finally {
+          loadingRef.current = false;
+          setLoading(false);
+        }
+      };
+
+      initialFetch();
     }
-  }, [location, timeRange, fetchForecastData]);
+  }, [location, timeRange, getHoursFromTimeRange]); // FIXED: All stable dependencies, no fetchForecastData
 
   // Cleanup on unmount
   useEffect(() => {
@@ -136,10 +205,70 @@ const useForecastData = ({
     };
   }, []);
 
-  // Manual refresh function
+  // Manual refresh function - FIXED: Stable implementation without fetchForecastData dependency
   const refresh = useCallback(() => {
-    fetchForecastData(true);
-  }, [fetchForecastData]);
+    if (!locationRef.current || loadingRef.current) {
+      return;
+    }
+
+    const manualRefresh = async () => {
+      loadingRef.current = true;
+      setLoading(true);
+      setError(null);
+
+      try {
+        const hours = getHoursFromTimeRange(timeRange);
+        const { lat, lng } = locationRef.current;
+
+        let rawData;
+        try {
+          rawData = await forecastService.getForecastData(lat, lng, hours);
+        } catch (apiError) {
+          console.warn('Forecast API failed, using mock data:', apiError);
+          rawData = generateMockMLForecast(hours, { lat, lng });
+        }
+
+        if (!rawData || rawData.length === 0) {
+          console.warn('No forecast data received, generating mock data');
+          rawData = generateMockMLForecast(hours, { lat, lng });
+        }
+
+        const formattedData = formatForecastData(rawData);
+        const avgConfidence = formattedData.reduce((sum, item) => 
+          sum + (item.confidence || 0), 0) / formattedData.length;
+
+        setData(formattedData);
+        setConfidence(avgConfidence);
+        setLastUpdated(new Date().toISOString());
+        setError(null);
+
+      } catch (error) {
+        console.error('Failed to fetch forecast data:', error);
+        
+        try {
+          const hours = getHoursFromTimeRange(timeRange);
+          const { lat, lng } = locationRef.current;
+          const mockData = generateMockMLForecast(hours, { lat, lng });
+          const formattedData = formatForecastData(mockData);
+          
+          setData(formattedData);
+          setConfidence(0.75);
+          setLastUpdated(new Date().toISOString());
+          setError('Using sample forecast data. Real-time predictions unavailable.');
+        } catch (fallbackError) {
+          console.error('Failed to generate mock forecast data:', fallbackError);
+          setError('Unable to load forecast data. Please try again.');
+          setData([]);
+          setConfidence(0);
+        }
+      } finally {
+        loadingRef.current = false;
+        setLoading(false);
+      }
+    };
+
+    manualRefresh();
+  }, [timeRange, getHoursFromTimeRange]); // FIXED: Only stable dependencies
 
   // Filter data by pollutant if needed
   const getFilteredData = useCallback(() => {

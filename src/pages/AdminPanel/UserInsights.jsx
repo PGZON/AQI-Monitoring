@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import adminService from '../../services/adminService';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { useDebounce } from '../../hooks/useDebounce';
 
 const UserInsights = () => {
   const [users, setUsers] = useState([]);
@@ -17,6 +18,9 @@ const UserInsights = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [userActivity, setUserActivity] = useState(null);
   const [showUserModal, setShowUserModal] = useState(false);
+
+  // ✅ BULLETPROOF: Debounce search term to prevent API spam
+  const debouncedSearchTerm = useDebounce(searchTerm, 600); // Wait 600ms after user stops typing
   const [actionLoading, setActionLoading] = useState(false);
 
   const fetchUsers = useCallback(async (page = 1, search = '') => {
@@ -36,19 +40,25 @@ const UserInsights = () => {
     }
   }, []);
 
+  // ✅ FIXED: Use debounced search term instead of immediate searchTerm
   useEffect(() => {
-    fetchUsers(1, searchTerm);
-  }, [fetchUsers, searchTerm]);
+    console.log(`🔍 [UserInsights] Fetching users for search: "${debouncedSearchTerm}"`);
+    fetchUsers(1, debouncedSearchTerm);
+  }, [fetchUsers, debouncedSearchTerm]); // Use debounced version
 
+  // ✅ FIXED: Only update search term, no immediate API call
   const handleSearch = useCallback((e) => {
     const value = e.target.value;
-    setSearchTerm(value);
+    setSearchTerm(value); // This will trigger debounced search automatically
     setCurrentPage(1);
+    console.log(`⌨️ [UserInsights] Search input: "${value}" (debounced search will trigger in 600ms)`);
   }, []);
 
   const handlePageChange = useCallback((page) => {
-    fetchUsers(page, searchTerm);
-  }, [fetchUsers, searchTerm]);
+    console.log(`📄 [UserInsights] Changing to page: ${page}`);
+    fetchUsers(page, debouncedSearchTerm); // Use debounced search term
+    setCurrentPage(page);
+  }, [fetchUsers, debouncedSearchTerm]);
 
   const handleUserClick = useCallback(async (user) => {
     setSelectedUser(user);

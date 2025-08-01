@@ -20,6 +20,7 @@ export const useAlerts = (aqiData, location) => {
   const aqiDataRef = useRef(aqiData);
   const locationRef = useRef(location);
   const alertSettingsRef = useRef(alertSettings);
+  const hasInitialized = useRef(false);
 
   // Update refs when props change
   useEffect(() => {
@@ -231,6 +232,26 @@ export const useAlerts = (aqiData, location) => {
 
     return () => clearInterval(interval);
   }, [location?.latitude, location?.longitude, fetchCurrentAlerts]);
+
+  // ✅ FIXED VERSION
+  useEffect(() => {
+    if (!aqiData || !alertSettings || hasInitialized.current) return;
+    hasInitialized.current = true;
+    
+    checkForAlerts();
+  }, []); // Remove problematic dependencies
+
+  // Fix auto-refresh with stable reference
+  useEffect(() => {
+    if (!location?.latitude || !location?.longitude) return;
+
+    const interval = setInterval(() => {
+      // Use current values directly instead of depending on function
+      fetchCurrentAlerts(location.latitude, location.longitude);
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [location?.latitude, location?.longitude]); // Only location as dependency
 
   return {
     // Data

@@ -1,17 +1,13 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 // Custom hook for managing geolocation
 export const useGeolocation = (options = {}) => {
   const [location, setLocation] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-
-  const defaultOptions = useMemo(() => ({
-    enableHighAccuracy: true,
-    timeout: 10000,
-    maximumAge: 300000, // 5 minutes
-    ...options
-  }), [options]);
+  
+  // ✅ BULLETPROOF: Prevent infinite loops with useRef guard
+  const initStarted = useRef(false);
 
   const getCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -21,6 +17,14 @@ export const useGeolocation = (options = {}) => {
 
     setLoading(true);
     setError(null);
+
+    // ✅ FIXED: Use current options directly to avoid dependency issues
+    const currentOptions = {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 300000, // 5 minutes
+      ...options // Use options directly from closure
+    };
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -53,16 +57,36 @@ export const useGeolocation = (options = {}) => {
         setError(new Error(errorMessage));
         setLoading(false);
       },
-      defaultOptions
+      currentOptions
     );
-  }, [defaultOptions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // ✅ INTENTIONAL: Empty deps to prevent infinite loops, options accessed from closure
 
-  // Auto-fetch location on mount if enabled
+  // ✅ BULLETPROOF: Auto-fetch location on mount with guard
   useEffect(() => {
-    if (options.autoFetch !== false) {
-      getCurrentLocation();
+    console.log('🔥 [useGeolocation] Effect - initStarted:', initStarted.current);
+    
+    // Guard against multiple executions
+    if (initStarted.current) {
+      console.log('⏭️ [useGeolocation] Skipping - already initialized');
+      return;
     }
-  }, [options.autoFetch, getCurrentLocation]);
+
+    // Only run if autoFetch is enabled (default true)
+    if (options.autoFetch === false) {
+      console.log('⏭️ [useGeolocation] Skipping - autoFetch disabled');
+      return;
+    }
+
+    // Lock to prevent re-runs
+    initStarted.current = true;
+    console.log('🔒 [useGeolocation] LOCKED - will never run again');
+
+    // Safe to call getCurrentLocation now
+    getCurrentLocation();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // ✅ INTENTIONAL: Empty deps to prevent infinite loops
 
   return {
     location,

@@ -5,6 +5,7 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
 import { useUser } from '../context/UserContext';
+import { useDebounceCallback } from '../hooks/useDebounce';
 import forecastService from '../services/forecastService';
 import { getAQICategory } from '../utils/aqiUtils';
 import LoadingSpinner from './LoadingSpinner';
@@ -19,29 +20,42 @@ const AddLocationModal = ({ isOpen, onClose, onAdd }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [error, setError] = useState('');
 
-  const handleSearch = useCallback(async () => {
-    if (!locationName.trim()) return;
+  // ✅ BULLETPROOF: Debounced search to prevent API spam
+  const debouncedSearch = useDebounceCallback(async (searchTerm) => {
+    if (!searchTerm.trim()) {
+      setSearchResults([]);
+      return;
+    }
     
+    console.log(`🔍 [SavedLocations] Searching for: "${searchTerm}"`);
     setIsSearching(true);
     setError('');
     
     try {
       // Mock geocoding service (replace with real service like Google Maps or OpenStreetMap)
       const mockResults = [
-        { name: `${locationName}, NY`, lat: 40.7128, lng: -74.0060 },
-        { name: `${locationName}, CA`, lat: 34.0522, lng: -118.2437 },
-        { name: `${locationName}, TX`, lat: 29.7604, lng: -95.3698 }
+        { name: `${searchTerm}, NY`, lat: 40.7128, lng: -74.0060 },
+        { name: `${searchTerm}, CA`, lat: 34.0522, lng: -118.2437 },
+        { name: `${searchTerm}, TX`, lat: 29.7604, lng: -95.3698 }
       ];
       
-      setTimeout(() => {
-        setSearchResults(mockResults);
-        setIsSearching(false);
-      }, 1000);
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      setSearchResults(mockResults);
+      console.log('✅ [SavedLocations] Search completed');
     } catch (err) {
+      console.error('❌ [SavedLocations] Search error:', err);
       setError('Failed to search locations');
+      setSearchResults([]);
+    } finally {
       setIsSearching(false);
     }
-  }, [locationName]);
+  }, 1000); // 1 second debounce - waits for user to stop typing
+
+  const handleSearch = useCallback(() => {
+    debouncedSearch(locationName);
+  }, [locationName, debouncedSearch]);
 
   const handleAddLocation = useCallback(async (result) => {
     try {
