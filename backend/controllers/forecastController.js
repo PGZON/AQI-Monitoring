@@ -7,15 +7,26 @@ const { validationResult } = require('express-validator');
  * @access Private/Public (depending on configuration)
  */
 exports.getForecast = async (req, res) => {
+  const debugId = `forecast-${Date.now()}`;
+  console.log(`🔍 [${debugId}] Starting getForecast controller...`);
+  console.log(`🔍 [${debugId}] Request method:`, req.method);
+  console.log(`🔍 [${debugId}] Request URL:`, req.originalUrl);
+  console.log(`🔍 [${debugId}] Request headers:`, req.headers);
+  console.log(`🔍 [${debugId}] Request body:`, req.body);
+  console.log(`🔍 [${debugId}] Request query:`, req.query);
+  
   try {
+    console.log(`🔍 [${debugId}] Running validation...`);
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.error(`❌ [${debugId}] Validation errors:`, errors.array());
       return res.status(400).json({
         success: false,
         message: 'Validation errors',
         errors: errors.array()
       });
     }
+    console.log(`✅ [${debugId}] Validation passed`);
 
     const {
       city,
@@ -25,27 +36,38 @@ exports.getForecast = async (req, res) => {
       autoTrain = true
     } = req.body;
 
+    console.log(`🔍 [${debugId}] Extracted parameters:`, { city, lat, lon, days, autoTrain });
+
     // Validate parameters
+    console.log(`🔍 [${debugId}] Running mlService validation...`);
     const validation = mlService.validateForecastParams({ city, lat, lon, days });
     if (!validation.isValid) {
+      console.error(`❌ [${debugId}] ML service validation failed:`, validation.errors);
       return res.status(400).json({
         success: false,
         message: 'Invalid parameters',
         errors: validation.errors
       });
     }
+    console.log(`✅ [${debugId}] ML service validation passed`);
 
     // Get forecast from ML service
-    const forecastResult = await mlService.getForecast({
+    console.log(`🔍 [${debugId}] Calling mlService.getForecast...`);
+    const forecastParams = {
       city,
       lat: lat ? parseFloat(lat) : undefined,
       lon: lon ? parseFloat(lon) : undefined,
       days: parseInt(days),
       autoTrain
-    });
+    };
+    console.log(`🔍 [${debugId}] Forecast params:`, forecastParams);
+    
+    const forecastResult = await mlService.getForecast(forecastParams);
+    console.log(`🔍 [${debugId}] ML service result:`, forecastResult);
 
     // Format response
-    const response = mlService.formatForecastResponse(forecastResult, {
+    console.log(`🔍 [${debugId}] Formatting response...`);
+    const response = await mlService.formatForecastResponse(forecastResult, {
       request_params: {
         city,
         lat,
@@ -54,16 +76,28 @@ exports.getForecast = async (req, res) => {
         auto_train: autoTrain
       }
     });
+    console.log(`🔍 [${debugId}] Formatted response:`, response);
 
     const statusCode = response.success ? 200 : 500;
+    console.log(`✅ [${debugId}] Sending response with status:`, statusCode);
     res.status(statusCode).json(response);
 
   } catch (error) {
-    console.error('Error in getForecast:', error);
+    console.error(`❌ [${debugId}] Error in getForecast:`, error);
+    console.error(`❌ [${debugId}] Error stack:`, error.stack);
+    console.error(`❌ [${debugId}] Error details:`, {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      errno: error.errno,
+      syscall: error.syscall
+    });
+    
     res.status(500).json({
       success: false,
       message: 'Failed to generate forecast',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+      debugId
     });
   }
 };

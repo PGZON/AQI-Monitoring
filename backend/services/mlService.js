@@ -101,9 +101,17 @@ class MLService {
    * Get AQI forecast predictions using trained LSTM model
    */
   async getForecast(params = {}) {
+    const debugId = `ml-forecast-${Date.now()}`;
+    console.log(`🔍 [${debugId}] Starting ML getForecast...`);
+    console.log(`🔍 [${debugId}] Input params:`, params);
+    
     try {
+      console.log(`🔍 [${debugId}] Checking ML service health...`);
       const isAvailable = await this.checkMLServiceHealth();
+      console.log(`🔍 [${debugId}] ML service available:`, isAvailable);
+      
       if (!isAvailable) {
+        console.log(`⚠️ [${debugId}] ML service not available, using fallback`);
         return this.getFallbackForecast(params);
       }
 
@@ -115,12 +123,50 @@ class MLService {
         currentData = {}
       } = params;
 
+      console.log(`🔍 [${debugId}] Extracted params:`, { city, lat, lon, days, currentData });
+
+      // Validate that we have coordinates (required for ML service)
+      if (!lat || !lon || isNaN(parseFloat(lat)) || isNaN(parseFloat(lon))) {
+        console.log(`⚠️ [${debugId}] No valid coordinates provided for ML forecast, using fallback`);
+        console.log(`🔍 [${debugId}] Coordinate validation details:`, {
+          lat, lon,
+          latExists: !!lat,
+          lonExists: !!lon,
+          latParseable: !isNaN(parseFloat(lat)),
+          lonParseable: !isNaN(parseFloat(lon)),
+          latParsed: parseFloat(lat),
+          lonParsed: parseFloat(lon)
+        });
+        return this.getFallbackForecast(params);
+      }
+
+      const latitude = parseFloat(lat);
+      const longitude = parseFloat(lon);
+
+      console.log(`🔍 [${debugId}] Parsed coordinates:`, { latitude, longitude });
+
+      // Validate coordinate ranges
+      if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+        console.log(`⚠️ [${debugId}] Coordinates out of valid range, using fallback`);
+        console.log(`🔍 [${debugId}] Range validation:`, {
+          latitude, longitude,
+          latValid: latitude >= -90 && latitude <= 90,
+          lonValid: longitude >= -180 && longitude <= 180
+        });
+        return this.getFallbackForecast(params);
+      }
+
+      console.log(`🔮 [${debugId}] Making ML forecast request:`, { latitude, longitude, days });
+      console.log(`🔮 [${debugId}] ML service URL:`, this.mlServiceUrl);
+
       // Use the new predict endpoint from your trained model
       const payload = {
-        latitude: parseFloat(lat),
-        longitude: parseFloat(lon),
+        latitude,
+        longitude,
         current_data: currentData
       };
+
+      console.log(`📡 [${debugId}] Sending payload to ML service:`, payload);
 
       const response = await axios.post(
         `${this.mlServiceUrl}/predict`,
@@ -133,9 +179,14 @@ class MLService {
         }
       );
 
+      console.log(`📥 [${debugId}] ML service response status:`, response.status);
+      console.log(`📥 [${debugId}] ML service response data:`, response.data);
+
       if (response.data.success) {
         // Convert single prediction to forecast format for compatibility
         const prediction = response.data.data;
+        console.log(`🔍 [${debugId}] Prediction data:`, prediction);
+        
         const forecasts = [];
         const baseDate = new Date();
         
@@ -202,9 +253,24 @@ class MLService {
         currentData = {}
       } = params;
 
+      // Validate that we have coordinates (required for ML service)
+      if (!lat || !lon || isNaN(parseFloat(lat)) || isNaN(parseFloat(lon))) {
+        throw new Error('Invalid coordinates provided for ML prediction');
+      }
+
+      const latitude = parseFloat(lat);
+      const longitude = parseFloat(lon);
+
+      // Validate coordinate ranges
+      if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+        throw new Error('Coordinates out of valid range for ML prediction');
+      }
+
+      console.log('🔮 Making ML prediction request:', { latitude, longitude });
+
       const payload = {
-        latitude: parseFloat(lat),
-        longitude: parseFloat(lon),
+        latitude,
+        longitude,
         current_data: currentData
       };
 
@@ -469,28 +535,47 @@ class MLService {
    * Format forecast data for consistent API response
    */
   async formatForecastResponse(mlResponse, additionalData = {}) {
+    const debugId = `format-${Date.now()}`;
+    console.log(`🔍 [${debugId}] Formatting forecast response...`);
+    console.log(`🔍 [${debugId}] ML response:`, mlResponse);
+    
     if (!mlResponse.success) {
+      console.log(`⚠️ [${debugId}] ML response not successful, returning as-is`);
       return mlResponse;
     }
 
-    const data = mlResponse.data;
+    const data = mlResponse.data || {};
+    console.log(`🔍 [${debugId}] Extracted data:`, data);
     
-    return {
+    // Safely get ML service status without throwing errors
+    let mlServiceStatus = false;
+    try {
+      mlServiceStatus = await this.checkMLServiceHealth();
+      console.log(`🔍 [${debugId}] ML service status:`, mlServiceStatus);
+    } catch (error) {
+      console.warn(`⚠️ [${debugId}] Unable to check ML service status during response formatting:`, error.message);
+    }
+    
+    // Build response with safe property access
+    const formattedResponse = {
       success: true,
       message: 'Forecast generated successfully',
       source: mlResponse.source || 'ml_service',
-      city: data.city,
+      city: data.city || 'Unknown',
       forecast: {
-        generated_at: data.generated_at,
-        model_used: data.model_used,
-        forecast_days: data.forecast_days,
-        overall_confidence: data.overall_confidence,
-        trend: data.trend,
-        predictions: data.forecast
+        generated_at: data.generated_at || new Date().toISOString(),
+        model_used: data.model_used || 'unknown',
+        forecast_days: data.forecast_days || 1,
+        overall_confidence: data.overall_confidence || 'medium',
+        trend: data.trend || 'stable',
+        predictions: data.forecast || data.predictions || []
       },
-      ml_service_status: await this.checkMLServiceHealth(),
+      ml_service_status: mlServiceStatus,
       ...additionalData
     };
+    
+    console.log(`✅ [${debugId}] Formatted response:`, formattedResponse);
+    return formattedResponse;
   }
 
   /**

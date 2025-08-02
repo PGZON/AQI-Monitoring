@@ -1,31 +1,32 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { UserProvider } from './context/UserContext';
-import { AlertProvider } from './context/AlertContext';
-import ProtectedRoute from './routes/ProtectedRoute';
-import PublicRoute from './routes/PublicRoute';
+import { AuthProvider, useAuth } from './context/AuthContext.jsx';
+import { UserProvider } from './context/UserContext.jsx';
+import { AlertProvider } from './context/AlertContext.jsx';
+import ProtectedRoute from './routes/ProtectedRoute.jsx';
+import PublicRoute from './routes/PublicRoute.jsx';
 import './App.css';
 
 // Direct imports - NO lazy loading to prevent "Element type is invalid" errors
-import LoginPage from './pages/LoginPage';
-import DashboardPage from './pages/DashboardPage';
-import ModernDashboard from './pages/ModernDashboard'; // NEW: Modern premium UI dashboard
-import WeatherDashboard from './components/WeatherDashboard'; // NEW: Weather dashboard component
-import ForecastPage from './pages/ForecastPage';
-import AnalyticsPage from './pages/AnalyticsPage';
-import AlertSettingsPage from './pages/AlertSettingsPage';
-import ProfilePage from './pages/ProfilePage';
-import LandingPage from './pages/LandingPage';
-import OfflinePage from './pages/OfflinePage';
+import LoginPage from './pages/LoginPage.jsx';
+import DashboardPage from './pages/DashboardPage.jsx';
+import ModernDashboard from './pages/ModernDashboard.jsx'; // NEW: Modern premium UI dashboard
+import WeatherDashboard from './components/WeatherDashboard.jsx'; // NEW: Weather dashboard component
+import ForecastPage from './pages/ForecastPage.jsx';
+import MLDashboard from './pages/MLDashboard.jsx'; // NEW: ML Dashboard with predictions and heatmap
+import AnalyticsPage from './pages/AnalyticsPage.jsx';
+import AlertSettingsPage from './pages/AlertSettingsPage.jsx';
+import ProfilePage from './pages/ProfilePage.jsx';
+import LandingPage from './pages/LandingPage.jsx';
+import OfflinePage from './pages/OfflinePage.jsx';
 
 // Admin panel pages - direct imports
-import AdminDashboard from './pages/AdminPanel/AdminDashboard';
-import UserInsights from './pages/AdminPanel/UserInsights';
-import MLStatusPanel from './pages/AdminPanel/MLStatusPanel';
-import DataReview from './pages/AdminPanel/DataReview';
-import LogsViewer from './pages/AdminPanel/LogsViewer';
-import ProtectedAdminRoute from './components/admin/ProtectedAdminRoute';
+import AdminDashboard from './pages/AdminPanel/AdminDashboard.jsx';
+import UserInsights from './pages/AdminPanel/UserInsights.jsx';
+import MLStatusPanel from './pages/AdminPanel/MLStatusPanel.jsx';
+import DataReview from './pages/AdminPanel/DataReview.jsx';
+import LogsViewer from './pages/AdminPanel/LogsViewer.jsx';
+import ProtectedAdminRoute from './components/admin/ProtectedAdminRoute.jsx';
 
 // Catch-all route component to prevent infinite redirects
 const CatchAllRoute = () => {
@@ -102,6 +103,15 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <ForecastPage />
+                    </ProtectedRoute>
+                  }
+                />
+                
+                <Route
+                  path="/ml"
+                  element={
+                    <ProtectedRoute>
+                      <MLDashboard />
                     </ProtectedRoute>
                   }
                 />

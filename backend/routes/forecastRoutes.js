@@ -115,12 +115,32 @@ router.post('/batch-predict',
     body('locations')
       .isArray({ min: 1, max: 10 })
       .withMessage('Locations must be an array with 1-10 items'),
-    body('locations.*.lat')
-      .isFloat({ min: -90, max: 90 })
-      .withMessage('Each location must have valid latitude'),
-    body('locations.*.lon')
-      .isFloat({ min: -180, max: 180 })
-      .withMessage('Each location must have valid longitude')
+    body('locations')
+      .custom((locations) => {
+        if (!Array.isArray(locations)) return false;
+        
+        for (let i = 0; i < locations.length; i++) {
+          const loc = locations[i];
+          
+          if (!loc.lat || !loc.lon) {
+            throw new Error(`Location ${i + 1} must have lat and lon properties`);
+          }
+          
+          const lat = parseFloat(loc.lat);
+          const lon = parseFloat(loc.lon);
+          
+          if (lat < -90 || lat > 90) {
+            throw new Error(`Location ${i + 1} latitude must be between -90 and 90`);
+          }
+          
+          if (lon < -180 || lon > 180) {
+            throw new Error(`Location ${i + 1} longitude must be between -180 and 180`);
+          }
+        }
+        
+        return true;
+      })
+      .withMessage('All locations must have valid lat/lon coordinates')
   ],
   forecastController.getBatchPredictions
 );

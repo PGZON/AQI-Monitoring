@@ -14,14 +14,145 @@ class ForecastService {
    * @returns {Promise<Array>} Forecast data array
    */
   async getForecastData(lat, lng, hours = 24) {
+    const debugId = `forecast-${Date.now()}`;
+    console.log(`🔍 [${debugId}] Starting getForecastData...`);
+    
     try {
-      const response = await api.get('/forecast', {
-        params: { lat, lng, hours }
+      // Log incoming parameters for debugging
+      console.log(`🔍 [${debugId}] Raw parameters received:`, { 
+        lat, lng, hours, 
+        types: { lat: typeof lat, lng: typeof lng, hours: typeof hours } 
+      });
+
+      // Validate and convert parameters
+      const latitude = parseFloat(lat);
+      const longitude = parseFloat(lng);
+      const forecastDays = Math.max(1, Math.ceil(hours / 24) || 1);
+
+      console.log(`🔍 [${debugId}] Converted parameters:`, { 
+        latitude, longitude, forecastDays,
+        isValidLat: !isNaN(latitude),
+        isValidLng: !isNaN(longitude)
+      });
+
+      // Validate coordinates with detailed error messages
+      if (lat === null || lat === undefined || lng === null || lng === undefined) {
+        const error = new Error(`Coordinates cannot be null/undefined. Received lat: ${lat}, lng: ${lng}`);
+        console.error(`❌ [${debugId}] Validation failed:`, error.message);
+        throw error;
+      }
+
+      if (isNaN(latitude) || isNaN(longitude)) {
+        const error = new Error(`Invalid coordinates provided. Could not convert to numbers: lat="${lat}" (${typeof lat}) -> ${latitude}, lng="${lng}" (${typeof lng}) -> ${longitude}`);
+        console.error(`❌ [${debugId}] Conversion failed:`, error.message);
+        throw error;
+      }
+      
+      if (latitude < -90 || latitude > 90) {
+        const error = new Error(`Latitude must be between -90 and 90. Received: ${latitude}`);
+        console.error(`❌ [${debugId}] Latitude range failed:`, error.message);
+        throw error;
+      }
+      
+      if (longitude < -180 || longitude > 180) {
+        const error = new Error(`Longitude must be between -180 and 180. Received: ${longitude}`);
+        console.error(`❌ [${debugId}] Longitude range failed:`, error.message);
+        throw error;
+      }
+
+      console.log(`🌍 [${debugId}] Requesting forecast data:`, { lat: latitude, lon: longitude, days: forecastDays });
+
+      // Use the correct backend endpoint for forecast predictions
+      console.log(`📡 [${debugId}] Making API call to /forecast/predict...`);
+      
+      const requestPayload = {
+        lat: latitude,
+        lon: longitude, // Backend expects 'lon' not 'lng'
+        days: forecastDays
+      };
+      
+      console.log(`📡 [${debugId}] Request payload:`, requestPayload);
+      
+      const response = await api.post('/forecast/predict', requestPayload);
+
+      console.log(`✅ [${debugId}] API call successful! Status:`, response.status);
+      console.log(`✅ [${debugId}] Forecast response received:`, response.data);
+      console.log(`📊 [${debugId}] Response structure check:`, {
+        hasForecast: !!response.data?.forecast,
+        hasPredictions: !!response.data?.predictions,
+        hasData: !!response.data?.data,
+        nestedPredictions: !!response.data?.forecast?.predictions,
+        actualStructure: Object.keys(response.data || {}),
+        responseType: typeof response.data,
+        responseSuccess: response.data?.success
       });
       
-      return response.data.forecast || [];
+      // Extract forecast data from the nested structure
+      if (response.data && response.data.forecast && response.data.forecast.predictions) {
+        console.log(`📈 [${debugId}] Using nested predictions:`, response.data.forecast.predictions.length, 'items');
+        return response.data.forecast.predictions;
+      } else if (response.data && response.data.forecast) {
+        console.log(`📈 [${debugId}] Using forecast object:`, response.data.forecast);
+        return response.data.forecast;
+      } else if (response.data && response.data.predictions) {
+        console.log(`📈 [${debugId}] Using direct predictions:`, response.data.predictions.length, 'items');
+        return response.data.predictions;
+      } else if (response.data && response.data.data) {
+        console.log(`📈 [${debugId}] Using data property:`, response.data.data);
+        return response.data.data;
+      } else {
+        console.warn(`⚠️ [${debugId}] Unexpected response structure:`, response.data);
+        return [];
+      }
     } catch (error) {
-      console.warn('Failed to fetch forecast data, using mock data:', error);
+      console.error(`❌ [${debugId}] Failed to fetch forecast data:`, error);
+      
+      // Log detailed error information
+      if (error.response) {
+        console.error(`🚨 [${debugId}] Server responded with error:`, {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data,
+          headers: error.response.headers,
+          url: error.response.config?.url,
+          method: error.response.config?.method,
+          requestData: error.response.config?.data
+        });
+        
+        // If it's a validation error, show the specific issues
+        if (error.response.status === 400 && error.response.data) {
+          console.error(`💥 [${debugId}] Validation errors:`, error.response.data.errors || error.response.data.message);
+        }
+        
+        // Special handling for 500 errors
+        if (error.response.status === 500) {
+          console.error(`🚨 [${debugId}] 500 SERVER ERROR - BACKEND ISSUE:`, {
+            message: 'The backend server encountered an internal error',
+            endpoint: '/forecast/predict',
+            requestSent: error.response.config?.data,
+            serverResponse: error.response.data,
+            troubleshooting: [
+              '1. Check backend server logs',
+              '2. Verify ML service is running',
+              '3. Check database connectivity',
+              '4. Validate request format matches backend expectations'
+            ]
+          });
+        }
+      } else if (error.request) {
+        console.error(`🌐 [${debugId}] No response received:`, error.request);
+        console.error(`🌐 [${debugId}] Request details:`, {
+          url: error.config?.url,
+          method: error.config?.method,
+          data: error.config?.data,
+          timeout: error.config?.timeout
+        });
+      } else {
+        console.error(`⚙️ [${debugId}] Request setup error:`, error.message);
+        console.error(`⚙️ [${debugId}] Error stack:`, error.stack);
+      }
+      
+      console.warn(`🔄 [${debugId}] Using mock data as fallback`);
       return generateMockForecastData();
     }
   }
@@ -35,13 +166,58 @@ class ForecastService {
    */
   async getMLPrediction(lat, lng, targetTime) {
     try {
-      const response = await api.get('/ml/predict', {
-        params: { lat, lng, target_time: targetTime }
+      // Validate and convert parameters
+      const latitude = parseFloat(lat);
+      const longitude = parseFloat(lng);
+
+      // Validate coordinates
+      if (isNaN(latitude) || isNaN(longitude)) {
+        throw new Error('Invalid coordinates provided');
+      }
+      
+      if (latitude < -90 || latitude > 90) {
+        throw new Error('Latitude must be between -90 and 90');
+      }
+      
+      if (longitude < -180 || longitude > 180) {
+        throw new Error('Longitude must be between -180 and 180');
+      }
+
+      console.log('🔮 Requesting LSTM prediction:', { lat: latitude, lon: longitude, targetTime });
+
+      // Use the LSTM prediction endpoint  
+      const response = await api.post('/forecast/lstm-predict', {
+        lat: latitude,
+        lon: longitude, // Backend expects 'lon' not 'lng'
+        currentData: {} // Add empty currentData object as it's expected
       });
+
+      console.log('✅ LSTM prediction response:', response.data);
       
       return response.data;
     } catch (error) {
-      console.warn('Failed to fetch ML prediction, using mock data:', error);
+      console.error('❌ Failed to fetch ML prediction:', error);
+      
+      // Log detailed error information
+      if (error.response) {
+        console.error('🚨 Server responded with error:', {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data,
+          headers: error.response.headers
+        });
+        
+        // If it's a validation error, show the specific issues
+        if (error.response.status === 400 && error.response.data) {
+          console.error('💥 Validation errors:', error.response.data.errors || error.response.data.message);
+        }
+      } else if (error.request) {
+        console.error('🌐 No response received:', error.request);
+      } else {
+        console.error('⚙️ Request setup error:', error.message);
+      }
+      
+      console.warn('Using mock prediction data as fallback');
       
       // Return mock ML prediction data
       const baseAQI = Math.floor(Math.random() * 150) + 50;
@@ -68,14 +244,20 @@ class ForecastService {
    */
   async getHeatmapData(bounds, limit = 50) {
     try {
-      const response = await api.get('/heatmap', {
+      // Use the nearby AQI endpoint to get multiple locations
+      const centerLat = (bounds.north + bounds.south) / 2;
+      const centerLng = (bounds.east + bounds.west) / 2;
+      
+      const response = await api.get('/aqi/nearby', {
         params: { 
-          ...bounds, 
+          lat: centerLat,
+          lng: centerLng,
+          radius: 50, // 50km radius
           limit 
         }
       });
       
-      return response.data.locations || [];
+      return response.data.locations || response.data.data || [];
     } catch (error) {
       console.warn('Failed to fetch heatmap data, using mock data:', error);
       return generateMockHeatmapData(limit);
@@ -91,11 +273,11 @@ class ForecastService {
    */
   async getHistoricalData(lat, lng, days = 7) {
     try {
-      const response = await api.get('/history', {
+      const response = await api.get('/aqi/history', {
         params: { lat, lng, days }
       });
       
-      return response.data.history || [];
+      return response.data.history || response.data.data || [];
     } catch (error) {
       console.warn('Failed to fetch historical data, using mock data:', error);
       

@@ -661,7 +661,7 @@ const ModernDashboard = () => {
         </div>
 
         {/* Bottom Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
           <Link to="/forecast" className="transform hover:scale-105 transition-transform">
             <ModernCard gradient={gradients.primary} className="p-6 text-white">
               <div className="flex items-center justify-between">
@@ -670,6 +670,18 @@ const ModernDashboard = () => {
                   <p className="text-sm opacity-80">7-day air quality predictions</p>
                 </div>
                 <div className="text-3xl">🔮</div>
+              </div>
+            </ModernCard>
+          </Link>
+
+          <Link to="/ml" className="transform hover:scale-105 transition-transform">
+            <ModernCard gradient="bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800" className="p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold">ML Dashboard</h3>
+                  <p className="text-sm opacity-80">AI predictions & heatmaps</p>
+                </div>
+                <div className="text-3xl">🧠</div>
               </div>
             </ModernCard>
           </Link>

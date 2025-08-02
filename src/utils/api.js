@@ -59,7 +59,8 @@ api.interceptors.request.use(
       baseURL: config.baseURL,
       fullURL: `${config.baseURL}${config.url}`,
       headers: config.headers,
-      data: config.data
+      data: config.data,
+      timestamp: new Date().toISOString()
     });
     
     const token = localStorage.getItem('token');
@@ -88,23 +89,44 @@ api.interceptors.response.use(
       config: {
         method: response.config.method,
         url: response.config.url
-      }
+      },
+      timestamp: new Date().toISOString()
     });
     return response;
   },
   (error) => {
-    console.error('❌ [API] Response error:', {
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
+    console.error('❌ [API] Response error details:', {
       message: error.message,
       code: error.code,
-      config: {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      responseData: error.response?.data,
+      responseHeaders: error.response?.headers,
+      requestConfig: {
         method: error.config?.method,
         url: error.config?.url,
-        baseURL: error.config?.baseURL
-      }
+        baseURL: error.config?.baseURL,
+        data: error.config?.data
+      },
+      timestamp: new Date().toISOString(),
+      stack: error.stack
     });
+    
+    // Special handling for 500 errors
+    if (error.response?.status === 500) {
+      console.error('🚨 [API] 500 INTERNAL SERVER ERROR DETECTED:', {
+        endpoint: `${error.config?.method?.toUpperCase()} ${error.config?.baseURL}${error.config?.url}`,
+        requestPayload: error.config?.data,
+        serverResponse: error.response?.data,
+        possibleCauses: [
+          'Backend endpoint not found',
+          'Backend method throwing exception',
+          'Database connection issue',
+          'Invalid request data format',
+          'Backend service unavailable'
+        ]
+      });
+    }
     
     // Handle 401 unauthorized responses
     if (error.response?.status === 401) {

@@ -377,7 +377,11 @@ const ForecastPage = () => {
           <div className="space-y-4">
             <div>
               <ForecastDashboard
-                location={selectedLocation}
+                location={selectedLocation ? {
+                  ...selectedLocation,
+                  lat: selectedLocation.coordinates?.lat,
+                  lng: selectedLocation.coordinates?.lng
+                } : null}
                 height={400}
                 initialTimeRange="24h"
                 initialPollutant="aqi"

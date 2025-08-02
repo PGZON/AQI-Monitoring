@@ -350,7 +350,7 @@ const DataReview = () => {
                         {station.aqi}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
-                        {getAQICategory(station.aqi)}
+                        {getAQICategory(station.aqi).level}
                       </div>
                     </td>
                     <td className="px-6 py-4">
