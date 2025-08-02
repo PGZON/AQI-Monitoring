@@ -81,6 +81,51 @@ router.post('/predict',
 );
 
 /**
+ * @route   POST /api/forecast/lstm-predict
+ * @desc    Get AQI prediction using trained LSTM model
+ * @access  Public (with optional authentication)
+ * @body    { lat, lon, currentData? }
+ */
+router.post('/lstm-predict', 
+  optionalAuth,
+  [
+    body('lat')
+      .isFloat({ min: -90, max: 90 })
+      .withMessage('Latitude is required and must be between -90 and 90'),
+    body('lon')
+      .isFloat({ min: -180, max: 180 })
+      .withMessage('Longitude is required and must be between -180 and 180'),
+    body('currentData')
+      .optional()
+      .isObject()
+      .withMessage('currentData must be an object')
+  ],
+  forecastController.getLSTMPrediction
+);
+
+/**
+ * @route   POST /api/forecast/batch-predict
+ * @desc    Get AQI predictions for multiple locations using LSTM model
+ * @access  Public (with optional authentication)
+ * @body    { locations: [{ lat, lon, currentData? }] }
+ */
+router.post('/batch-predict', 
+  optionalAuth,
+  [
+    body('locations')
+      .isArray({ min: 1, max: 10 })
+      .withMessage('Locations must be an array with 1-10 items'),
+    body('locations.*.lat')
+      .isFloat({ min: -90, max: 90 })
+      .withMessage('Each location must have valid latitude'),
+    body('locations.*.lon')
+      .isFloat({ min: -180, max: 180 })
+      .withMessage('Each location must have valid longitude')
+  ],
+  forecastController.getBatchPredictions
+);
+
+/**
  * @route   POST /api/forecast/train
  * @desc    Train ML models for a specific location
  * @access  Private (Admin only - training is resource intensive)

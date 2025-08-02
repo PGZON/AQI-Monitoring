@@ -287,3 +287,114 @@ exports.getMLHealth = async (req, res) => {
     });
   }
 };
+
+/**
+ * Get AQI prediction using trained LSTM model
+ * @route POST /api/forecast/lstm-predict
+ * @access Public
+ */
+exports.getLSTMPrediction = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation errors',
+        errors: errors.array()
+      });
+    }
+
+    const { lat, lon, currentData = {} } = req.body;
+
+    // Get prediction from ML service
+    const predictionResult = await mlService.getPrediction({
+      lat: parseFloat(lat),
+      lon: parseFloat(lon),
+      currentData
+    });
+
+    if (!predictionResult.success) {
+      return res.status(500).json({
+        success: false,
+        message: 'Prediction failed',
+        error: predictionResult.error
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        ...predictionResult.data,
+        generated_at: new Date().toISOString(),
+        coordinates: { lat: parseFloat(lat), lon: parseFloat(lon) }
+      },
+      source: predictionResult.source,
+      request_id: req.headers['x-request-id'] || Date.now().toString()
+    });
+
+  } catch (error) {
+    console.error('Error in getLSTMPrediction:', error);
+    res.status(500).json({
+      success: false,
+      message: 'LSTM prediction failed',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
+/**
+ * Get batch AQI predictions using trained LSTM model
+ * @route POST /api/forecast/batch-predict
+ * @access Public
+ */
+exports.getBatchPredictions = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation errors',
+        errors: errors.array()
+      });
+    }
+
+    const { locations } = req.body;
+
+    if (!Array.isArray(locations) || locations.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Locations array is required'
+      });
+    }
+
+    // Get batch predictions from ML service
+    const batchResult = await mlService.getBatchPredictions(locations);
+
+    if (!batchResult.success) {
+      return res.status(500).json({
+        success: false,
+        message: 'Batch prediction failed',
+        error: batchResult.error
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        predictions: batchResult.data,
+        total_locations: locations.length,
+        generated_at: new Date().toISOString()
+      },
+      source: batchResult.source,
+      request_id: req.headers['x-request-id'] || Date.now().toString()
+    });
+
+  } catch (error) {
+    console.error('Error in getBatchPredictions:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Batch prediction failed',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};

@@ -1,0 +1,339 @@
+{
+	"info": {
+		"_postman_id": "ml-api-test-collection",
+		"name": "AQI ML Service API Tests",
+		"description": "Test collection for AQI ML prediction endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "aqi-ml-service"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5001/health",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"health"
+					]
+				},
+				"description": "Check if ML service is running and healthy"
+			},
+			"response": []
+		},
+		{
+			"name": "Home - Service Info",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5001/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						""
+					]
+				},
+				"description": "Get basic service information and model status"
+			},
+			"response": []
+		},
+		{
+			"name": "Model Information",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5001/model-info",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"model-info"
+					]
+				},
+				"description": "Get detailed information about the trained LSTM model"
+			},
+			"response": []
+		},
+		{
+			"name": "Single AQI Prediction - Mumbai",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"latitude\": 19.0760,\n    \"longitude\": 72.8777\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5001/predict",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"predict"
+					]
+				},
+				"description": "Predict AQI for Mumbai using default pollution values"
+			},
+			"response": []
+		},
+		{
+			"name": "Single AQI Prediction - Delhi with Pollution Data",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"latitude\": 28.6139,\n    \"longitude\": 77.2090,\n    \"current_data\": {\n        \"pm25\": 45.0,\n        \"pm10\": 80.0,\n        \"no2\": 25.0,\n        \"co\": 2.0,\n        \"o3\": 35.0,\n        \"so2\": 10.0\n    }\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5001/predict",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"predict"
+					]
+				},
+				"description": "Predict AQI for Delhi with specific pollution data"
+			},
+			"response": []
+		},
+		{
+			"name": "Single AQI Prediction - Bangalore",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"latitude\": 12.9716,\n    \"longitude\": 77.5946,\n    \"current_data\": {\n        \"pm25\": 30.0,\n        \"pm10\": 50.0,\n        \"no2\": 18.0,\n        \"co\": 1.2,\n        \"o3\": 28.0,\n        \"so2\": 6.0\n    }\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5001/predict",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"predict"
+					]
+				},
+				"description": "Predict AQI for Bangalore with moderate pollution levels"
+			},
+			"response": []
+		},
+		{
+			"name": "Batch Predictions - Multiple Cities",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"locations\": [\n        {\n            \"latitude\": 19.0760,\n            \"longitude\": 72.8777,\n            \"current_data\": {\n                \"pm25\": 35.0,\n                \"pm10\": 65.0,\n                \"no2\": 20.0\n            }\n        },\n        {\n            \"latitude\": 28.6139,\n            \"longitude\": 77.2090,\n            \"current_data\": {\n                \"pm25\": 55.0,\n                \"pm10\": 95.0,\n                \"no2\": 30.0\n            }\n        },\n        {\n            \"latitude\": 12.9716,\n            \"longitude\": 77.5946,\n            \"current_data\": {\n                \"pm25\": 25.0,\n                \"pm10\": 45.0,\n                \"no2\": 15.0\n            }\n        }\n    ]\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5001/batch-predict",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"batch-predict"
+					]
+				},
+				"description": "Get predictions for multiple cities: Mumbai, Delhi, Bangalore"
+			},
+			"response": []
+		},
+		{
+			"name": "Main Backend - LSTM Prediction",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"lat\": 19.0760,\n    \"lon\": 72.8777,\n    \"currentData\": {\n        \"pm25\": 40.0,\n        \"pm10\": 70.0,\n        \"no2\": 22.0,\n        \"co\": 1.8,\n        \"o3\": 32.0,\n        \"so2\": 8.0\n    }\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/forecast/lstm-predict",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"forecast",
+						"lstm-predict"
+					]
+				},
+				"description": "Test LSTM prediction through main backend API"
+			},
+			"response": []
+		},
+		{
+			"name": "Main Backend - Batch Predictions",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"locations\": [\n        {\n            \"lat\": 19.0760,\n            \"lon\": 72.8777,\n            \"currentData\": {\n                \"pm25\": 35.0,\n                \"pm10\": 65.0\n            }\n        },\n        {\n            \"lat\": 28.6139,\n            \"lon\": 77.2090,\n            \"currentData\": {\n                \"pm25\": 50.0,\n                \"pm10\": 85.0\n            }\n        }\n    ]\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/forecast/batch-predict",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"forecast",
+						"batch-predict"
+					]
+				},
+				"description": "Test batch predictions through main backend API"
+			},
+			"response": []
+		},
+		{
+			"name": "Error Test - Invalid Coordinates",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"latitude\": 999,\n    \"longitude\": 999\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5001/predict",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"predict"
+					]
+				},
+				"description": "Test error handling with invalid coordinates"
+			},
+			"response": []
+		},
+		{
+			"name": "Error Test - Missing Data",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{}"
+				},
+				"url": {
+					"raw": "http://localhost:5001/predict",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"predict"
+					]
+				},
+				"description": "Test error handling with missing required data"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "ml_service_url",
+			"value": "http://localhost:5001",
+			"type": "string"
+		},
+		{
+			"key": "main_backend_url",
+			"value": "http://localhost:5000",
+			"type": "string"
+		}
+	]
+}
