@@ -1,0 +1,24 @@
+{
+  "model_type": "LocationAwareLSTM",
+  "sequence_length": 24,
+  "feature_columns": [
+    "pm25",
+    "pm10",
+    "no2",
+    "co",
+    "o3",
+    "so2",
+    "hour_sin",
+    "hour_cos",
+    "month_sin",
+    "month_cos",
+    "day_sin",
+    "day_cos",
+    "is_weekend",
+    "target_lat",
+    "target_lon"
+  ],
+  "model_path": "models/location_aware_lstm_model.h5",
+  "created_at": "2025-08-02T20:12:16.526444",
+  "tensorflow_version": "2.16.1"
+}
