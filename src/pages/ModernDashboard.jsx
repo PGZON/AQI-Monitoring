@@ -12,6 +12,7 @@ import alertService from '../services/alertService';
 import ModernForecastWidget from '../components/ModernForecastWidget';
 import AnimatedBackground from '../components/AnimatedBackground';
 import LoadingSpinner from '../components/LoadingSpinner';
+import DashboardHeader from '../components/DashboardHeader';
 
 // Modern gradient backgrounds and colors
 const gradients = {
@@ -194,6 +195,7 @@ const ModernDashboard = () => {
   const [locationName, setLocationName] = useState('');
   
   const hasInitialized = useRef(false);
+  const loadingTimeoutRef = useRef(null);
 
   // Manual city lookup for major cities when geocoding fails
   const getCityFromCoordinates = (lat, lng) => {
@@ -391,30 +393,6 @@ const ModernDashboard = () => {
     }
   }, [user]); // Only depend on user
 
-  // Safety timeout to prevent infinite loading
-  useEffect(() => {
-    const loadingTimeout = setTimeout(() => {
-      if (loading) {
-        console.log('⏰ [ModernDashboard] Loading timeout reached, forcing completion');
-        setLoading(false);
-        
-        // Set basic fallback data if still loading
-        if (!aqiData || Object.keys(aqiData).length === 0) {
-          setAqiData({
-            location: { name: 'Your Location' },
-            coordinates: { latitude: 28.6139, longitude: 77.2090 },
-            aqi: { index: 75, category: 'MODERATE', color: '#f59e0b' },
-            pollutants: { pm25: { value: 25 }, pm10: { value: 45 } },
-            weather: { temperature: 28, humidity: 65, windSpeed: 12 },
-            lastUpdated: new Date()
-          });
-        }
-      }
-    }, 12000); // 12 second safety timeout
-
-    return () => clearTimeout(loadingTimeout);
-  }, [loading, aqiData]);
-
   const getCurrentLocation = () => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
@@ -471,54 +449,30 @@ const ModernDashboard = () => {
   return (
     <AnimatedBackground showMap={true} showGeometric={true}>
       <div className="min-h-screen">
-        {/* Modern Header with glassmorphism */}
-        <header className="bg-white/10 backdrop-blur-lg shadow-lg border-b border-white/20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-2xl font-bold text-white">
-                  AQI Monitor Pro
-                </h1>
-                <p className="text-sm text-white/80 mt-1">
-                  {getWelcomeMessage()}
-                </p>
+        {/* Dashboard Header with user info */}
+        <DashboardHeader title="AQI Monitor Pro" />
+        
+        {/* Main Content */}
+        <div className="relative z-10 pt-6">
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {error && (
+              <div className="mb-6 p-4 bg-red-500/20 backdrop-blur-lg border border-red-500/30 text-red-100 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <span className="text-xl">⚠️</span>
+                  <span>{error}</span>
+                </div>
               </div>
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => navigate('/profile')}
-                  className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-sm border border-white/20"
-                >
-                  <span className="text-white text-lg">👤</span>
-                </button>
-                <button
-                  onClick={logout}
-                  className="px-4 py-2 bg-red-500/80 hover:bg-red-600/80 text-white rounded-lg transition-colors backdrop-blur-sm"
-                >
-                  Logout
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
+            )}
 
-        {/* Main Dashboard Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {error && (
-            <div className="mb-6 p-4 bg-red-500/20 backdrop-blur-lg border border-red-500/30 text-red-100 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <span className="text-xl">⚠️</span>
-                <span>{error}</span>
-              </div>
+            {/* Hero Section - Main AQI Display */}
+            <div className="mb-8">
+              <LocationCard
+                location={locationName}
+                aqi={aqiData?.aqi?.index || aqiData?.aqi}
+                status={aqiData?.aqi?.category || aqiData?.status}
+                loading={loading}
+              />
             </div>
-          )}        {/* Hero Section - Main AQI Display */}
-        <div className="mb-8">
-          <LocationCard
-            location={locationName}
-            aqi={aqiData?.aqi?.index || aqiData?.aqi}
-            status={aqiData?.aqi?.category || aqiData?.status}
-            loading={loading}
-          />
-        </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -723,6 +677,7 @@ const ModernDashboard = () => {
           </Link>
         </div>
       </main>
+      </div>
       </div>
     </AnimatedBackground>
   );

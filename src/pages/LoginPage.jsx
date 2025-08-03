@@ -1,30 +1,18 @@
-import React, { useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import LoginForm from '../components/auth/LoginForm';
-import SignupForm from '../components/auth/SignupForm';
-import GoogleAuthButton from '../components/auth/GoogleAuthButton';
+import GoogleSignInButton from '../components/GoogleSignInButton';
+import EmailLoginForm from '../components/EmailLoginForm';
 
 const LoginPage = () => {
-  const [isSignup, setIsSignup] = useState(false);
-  const { isAuthenticated, loading } = useAuth();
-  const location = useLocation();
+  const { user, loading } = useAuth();
 
-  const from = location.state?.from?.pathname || '/dashboard';
+  console.log('📝 LoginPage: Rendering login form', { 
+    hasUser: !!user, 
+    loading,
+    userEmail: user?.email 
+  });
 
-  // Redirect if already authenticated
-  if (isAuthenticated && !loading) {
-    return <Navigate to={from} replace />;
-  }
-
-  // Show loading while checking authentication
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  // No redirect logic here - let PublicRoute handle it
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -34,58 +22,61 @@ const LoginPage = () => {
           <p className="mt-2 text-gray-600">Air Quality Monitoring System</p>
         </div>
 
-        {/* Toggle Tabs */}
-        <div className="bg-white rounded-lg shadow-sm p-1 mb-6">
-          <div className="flex">
-            <button
-              onClick={() => setIsSignup(false)}
-              className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
-                !isSignup
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => setIsSignup(true)}
-              className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
-                isSignup
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Sign Up
-            </button>
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                Sign in to your account
+              </h2>
+              <p className="text-sm text-gray-600 mb-6">
+                Choose your preferred sign-in method
+              </p>
+            </div>
+
+            {/* Google Sign-In */}
+            <GoogleSignInButton
+              className="w-full"
+              onSignInSuccess={(user) => {
+                console.log('Google login successful:', user.email, user.displayName);
+              }}
+              onSignInError={(error) => {
+                console.error('Google login failed:', error.message);
+              }}
+            />
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+              </div>
+            </div>
+
+            {/* Email/Password Form */}
+            <EmailLoginForm
+              onLoginSuccess={(user) => {
+                console.log('Email login successful:', user.email, user.displayName);
+              }}
+              onLoginError={(error) => {
+                console.error('Email login failed:', error.message);
+              }}
+            />
+
+            <div className="mt-6 text-center">
+              <p className="text-xs text-gray-500">
+                By signing in, you agree to our{' '}
+                <button className="text-blue-600 hover:text-blue-500 underline">
+                  Terms of Service
+                </button>{' '}
+                and{' '}
+                <button className="text-blue-600 hover:text-blue-500 underline">
+                  Privacy Policy
+                </button>
+              </p>
+            </div>
           </div>
-        </div>
-
-        {/* Form Content */}
-        <div className="space-y-6">
-          {isSignup ? (
-            <SignupForm onShowLogin={() => setIsSignup(false)} />
-          ) : (
-            <LoginForm onShowSignup={() => setIsSignup(true)} />
-          )}
-
-          {/* Google OAuth Button */}
-          <div className="max-w-md mx-auto">
-            <GoogleAuthButton />
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-8 text-center">
-          <p className="text-xs text-gray-500">
-            By signing in, you agree to our{' '}
-            <a href="/terms" className="text-blue-600 hover:text-blue-500">
-              Terms of Service
-            </a>{' '}
-            and{' '}
-            <a href="/privacy" className="text-blue-600 hover:text-blue-500">
-              Privacy Policy
-            </a>
-          </p>
         </div>
       </div>
     </div>

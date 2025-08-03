@@ -1,8 +1,25 @@
+/**
+ * Authentication Context
+ * Manages Firebase authentication state and provides auth methods
+ */
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import api from '../utils/api';
+import { 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  signOut, 
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile
+} from 'firebase/auth';
+import { auth } from '../config/firebase';
 
-const AuthContext = createContext();
+// Create authentication context
+const AuthContext = createContext({});
 
+// Custom hook to use authentication context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -11,231 +28,229 @@ export const useAuth = () => {
   return context;
 };
 
+// Authentication provider component
 export const AuthProvider = ({ children }) => {
-  console.log('🔧 [AuthProvider] AuthProvider component initializing');
-  
-  // Initialize with token from localStorage to avoid flash of unauthenticated state
-  const storedToken = localStorage.getItem('token');
-  
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(storedToken);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  console.log('📊 [AuthProvider] Initial state:', {
-    user: user,
-    token: token ? `${token.substring(0, 20)}...` : 'null',
-    isAuthenticated: isAuthenticated,
-    loading: loading
-  });
+  console.log('🔧 AuthProvider render:', { user: !!user, loading });
 
-  // Clear auth helper function  
-  const clearAuth = () => {
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
-    setIsAuthenticated(false);
+  // Google sign-in
+  const signInWithGoogle = async () => {
+    try {
+      setError(null);
+      // Don't set loading here to avoid conflicts with dashboard
+
+      const provider = new GoogleAuthProvider();
+      // Add scopes to get user profile information
+      provider.addScope('email');
+      provider.addScope('profile');
+      provider.addScope('openid');
+
+      // Configure the provider to get full user info
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+
+      const result = await signInWithPopup(auth, provider);
+      console.log('✅ Google sign-in successful:', result.user.email);
+      
+      return result.user;
+    } catch (error) {
+      console.error('❌ Google sign-in error:', error);
+      setError(error.message);
+      throw error;
+    }
   };
 
-  // Initialize authentication state on app load - ONLY ONCE
-  useEffect(() => {
-    let isMounted = true; // Prevent state updates if component unmounts
-    
-    console.log('🔄 [AuthProvider] useEffect triggered - initializing auth');
-    
-    const initializeAuth = async () => {
-      try {
-        const storedToken = localStorage.getItem('token');
-        console.log('🔍 [AuthProvider] Checking stored token:', storedToken ? `${storedToken.substring(0, 20)}...` : 'null');
-        
-        if (storedToken && isMounted) {
-          try {
-            console.log('🔐 [AuthProvider] Validating token with backend...');
-            // Validate token with backend
-            const response = await api.get('/auth/me');
-            
-            if (response.data.success && isMounted) {
-              console.log('✅ [AuthProvider] Token validation successful');
-              setToken(storedToken);
-              setUser(response.data.user);
-              setIsAuthenticated(true);
-            } else if (isMounted) {
-              console.log('❌ [AuthProvider] Token validation failed - clearing auth');
-              clearAuth();
-            }
-          } catch (tokenError) {
-            if (isMounted) {
-              console.log('❌ [AuthProvider] Token validation error:', tokenError.message);
-              // Check if it's a network error
-              if (!tokenError.response) {
-                console.warn('🌐 [AuthProvider] Network error - backend may be down');
-              }
-              clearAuth();
-            }
-          }
-        } else if (isMounted) {
-          console.log('ℹ️ [AuthProvider] No stored token found');
-        }
-      } catch (error) {
-        if (isMounted) {
-          console.error('❌ [AuthProvider] Auth initialization error:', error);
-          clearAuth();
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-          console.log('✅ [AuthProvider] Auth initialization complete');
-        }
-      }
-    };
+  // Email/Password sign-in
+  const signInWithEmail = async (email, password) => {
+    try {
+      setError(null);
+      // Don't set loading here to avoid conflicts with dashboard
 
-    // Add a timeout to prevent infinite loading
-    const authTimeout = setTimeout(() => {
-      if (isMounted) {
-        console.warn('⚠️ [AuthProvider] Auth initialization timeout - forcing completion');
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      console.log('✅ Email sign-in successful:', result.user.email);
+      
+      return result.user;
+    } catch (error) {
+      console.error('❌ Email sign-in error:', error);
+      setError(error.message);
+      throw error;
+    }
+  };
+
+  // Email/Password sign-up
+  const signUpWithEmail = async (email, password, displayName) => {
+    try {
+      setError(null);
+      // Don't set loading here to avoid conflicts with dashboard
+
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Update profile with display name if provided
+      if (displayName && result.user) {
+        await updateProfile(result.user, {
+          displayName: displayName
+        });
+      }
+      
+      console.log('✅ Email sign-up successful:', result.user.email);
+      
+      return result.user;
+    } catch (error) {
+      console.error('❌ Email sign-up error:', error);
+      setError(error.message);
+      throw error;
+    }
+  };
+
+  // Password reset
+  const resetPassword = async (email) => {
+    try {
+      setError(null);
+      await sendPasswordResetEmail(auth, email);
+      console.log('✅ Password reset email sent to:', email);
+    } catch (error) {
+      console.error('❌ Password reset error:', error);
+      setError(error.message);
+      throw error;
+    }
+  };
+
+  // Sign out
+  const logout = async () => {
+    try {
+      setError(null);
+      await signOut(auth);
+      console.log('✅ User signed out successfully');
+    } catch (error) {
+      console.error('❌ Sign out error:', error);
+      setError(error.message);
+      throw error;
+    }
+  };
+
+  // Get user ID token for API requests
+  const getIdToken = async () => {
+    if (!user) return null;
+    try {
+      const token = await user.getIdToken();
+      return token;
+    } catch (error) {
+      console.error('❌ Error getting ID token:', error);
+      return null;
+    }
+  };
+
+  // Check if user is authenticated
+  const isAuthenticated = () => {
+    return !!user;
+  };
+
+  // Get user display info
+  const getUserInfo = () => {
+    if (!user) return null;
+    
+    return {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      photoURL: user.photoURL,
+      emailVerified: user.emailVerified
+    };
+  };
+
+  // Listen for authentication state changes
+  useEffect(() => {
+    console.log('🔧 AuthContext: Setting up auth state listener');
+    
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log('🔄 Auth state changed:', { 
+        hasUser: !!user, 
+        email: user?.email,
+        displayName: user?.displayName
+      });
+      
+      if (user) {
+        console.log('✅ User authenticated:', {
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+          uid: user.uid
+        });
+        
+        setUser(user);
+        setLoading(false);
+        
+        // Store user in MongoDB backend (non-blocking)
+        setTimeout(async () => {
+          try {
+            const token = await user.getIdToken();
+            const response = await fetch('http://localhost:5000/api/auth/google-login', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                uid: user.uid,
+                email: user.email,
+                displayName: user.displayName,
+                photoURL: user.photoURL,
+                emailVerified: user.emailVerified
+              })
+            });
+            
+            if (response.ok) {
+              const userData = await response.json();
+              console.log('✅ User stored in backend:', userData);
+            } else {
+              console.warn('⚠️ Failed to store user in backend:', response.status);
+            }
+          } catch (backendError) {
+            console.error('❌ Backend storage error:', backendError);
+          }
+        }, 1000); // Wait 1 second to avoid blocking the UI
+        
+      } else {
+        console.log('❌ No authenticated user');
+        setUser(null);
         setLoading(false);
       }
-    }, 20000); // 20 second timeout
+      
+      console.log('🔧 AuthContext: Auth state processing complete');
+    });
 
-    initializeAuth();
-    
-    // Cleanup function
+    // Cleanup subscription on unmount
     return () => {
-      isMounted = false;
-      clearTimeout(authTimeout);
+      console.log('🔧 AuthContext: Cleaning up auth listener');
+      unsubscribe();
     };
-  }, []); // Empty dependency array to run only once
+  }, []);
 
-  const login = async (email, password) => {
-    try {
-      console.log('🔐 [AuthContext] Starting login process for:', email);
-      setLoading(true);
-      
-      console.log('📡 [AuthContext] Making API request to /auth/login');
-      console.log('🔗 [AuthContext] API Base URL:', api.defaults.baseURL);
-      
-      const response = await api.post('/auth/login', { email, password });
-      
-      console.log('📥 [AuthContext] Raw API Response:', response);
-      console.log('📥 [AuthContext] Response Status:', response.status);
-      console.log('📥 [AuthContext] Response Headers:', response.headers);
-      console.log('📥 [AuthContext] Response Data:', response.data);
-      
-      if (response.data.success) {
-        const { token: newToken, user: userData } = response.data;
-        
-        console.log('✅ [AuthContext] Login successful, got token:', newToken?.substring(0, 20) + '...');
-        console.log('✅ [AuthContext] User data:', userData);
-        
-        // Store token and update state
-        localStorage.setItem('token', newToken);
-        console.log('💾 [AuthContext] Token stored in localStorage');
-        
-        setToken(newToken);
-        setUser(userData);
-        setIsAuthenticated(true);
-        
-        console.log('🔄 [AuthContext] State updated - isAuthenticated:', true);
-        console.log('🔄 [AuthContext] Current user state:', userData);
-        
-        return { success: true, user: userData };
-      } else {
-        console.warn('⚠️ [AuthContext] Login failed - response not successful:', response.data);
-        return { success: false, message: response.data.message };
-      }
-    } catch (error) {
-      console.error('❌ [AuthContext] Login error caught:', error);
-      console.error('❌ [AuthContext] Error response:', error.response);
-      console.error('❌ [AuthContext] Error status:', error.response?.status);
-      console.error('❌ [AuthContext] Error data:', error.response?.data);
-      console.error('❌ [AuthContext] Error message:', error.message);
-      
-      const message = error.response?.data?.message || 'Login failed. Please try again.';
-      return { success: false, message };
-    } finally {
-      setLoading(false);
-      console.log('🏁 [AuthContext] Login process completed');
-    }
-  };
-
-  const register = async (userData) => {
-    try {
-      setLoading(true);
-      const response = await api.post('/auth/register', userData);
-      
-      if (response.data.success) {
-        const { token: newToken, user: newUser } = response.data;
-        
-        // Store token and update state
-        localStorage.setItem('token', newToken);
-        setToken(newToken);
-        setUser(newUser);
-        setIsAuthenticated(true);
-        
-        return { success: true, user: newUser };
-      } else {
-        return { success: false, message: response.data.message };
-      }
-    } catch (error) {
-      const message = error.response?.data?.message || 'Registration failed. Please try again.';
-      return { success: false, message };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const googleLogin = async (googleToken) => {
-    try {
-      setLoading(true);
-      const response = await api.post('/auth/google', { token: googleToken });
-      
-      if (response.data.success) {
-        const { token: newToken, user: userData } = response.data;
-        
-        // Store token and update state
-        localStorage.setItem('token', newToken);
-        setToken(newToken);
-        setUser(userData);
-        setIsAuthenticated(true);
-        
-        return { success: true, user: userData };
-      } else {
-        return { success: false, message: response.data.message };
-      }
-    } catch (error) {
-      const message = error.response?.data?.message || 'Google login failed. Please try again.';
-      return { success: false, message };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const logout = () => {
-    console.log('🚪 [AuthContext] Logging out user');
-    clearAuth();
-    
-    // Clear request coordinator state on logout
-    // requestCoordinator.clear(); // This line is removed as per the edit hint
-    
-    // Optional: Call backend logout endpoint
-    // api.post('/auth/logout').catch(() => {});
-  };
-
-  const updateUser = (updatedUser) => {
-    setUser(updatedUser);
-  };
-
+  // Context value
   const value = {
     user,
-    token,
-    isAuthenticated,
     loading,
-    login,
-    register,
-    googleLogin,
+    error,
+    signInWithGoogle,
+    signInWithEmail,
+    signUpWithEmail,
+    resetPassword,
     logout,
-    updateUser,
+    getIdToken,
+    isAuthenticated,
+    getUserInfo,
+    setError
   };
+
+  console.log('🔧 AuthProvider: Providing context value:', { 
+    hasUser: !!user, 
+    loading,
+    userEmail: user?.email 
+  });
 
   return (
     <AuthContext.Provider value={value}>

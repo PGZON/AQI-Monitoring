@@ -1,5 +1,5 @@
 /**
- * Firebase Authentication Routes
+ * Authentication Routes
  * Handles Firebase authentication with Google OAuth
  */
 
@@ -7,7 +7,6 @@ const express = require('express');
 const router = express.Router();
 const { getFirebaseClientConfig } = require('../config/firebase');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
-const { googleLogin } = require('../controllers/authController');
 
 /**
  * @route GET /api/auth/config
@@ -54,38 +53,11 @@ router.post('/verify', authenticateToken, (req, res) => {
 });
 
 /**
- * @route POST /api/auth/google-login
- * @desc Google OAuth login/signup - stores user in MongoDB
- * @access Public (but requires Firebase token)
- */
-router.post('/google-login', authenticateToken, googleLogin);
-
-/**
  * @route GET /api/auth/user
  * @desc Get current user information
  * @access Private
  */
 router.get('/user', authenticateToken, (req, res) => {
-  try {
-    res.json({
-      success: true,
-      user: req.user
-    });
-  } catch (error) {
-    console.error('❌ Error getting user info:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Server error getting user information'
-    });
-  }
-});
-
-/**
- * @route GET /api/auth/me
- * @desc Get current user information (alias for compatibility)
- * @access Private
- */
-router.get('/me', authenticateToken, (req, res) => {
   try {
     res.json({
       success: true,
@@ -174,20 +146,6 @@ router.post('/refresh', authenticateToken, (req, res) => {
       error: 'Server error refreshing authentication'
     });
   }
-});
-
-/**
- * @route GET /api/auth/health
- * @desc Health check for auth service
- * @access Public
- */
-router.get('/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'Firebase Auth service is running',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
 });
 
 module.exports = router;

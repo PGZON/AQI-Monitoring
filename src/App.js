@@ -30,7 +30,7 @@ import ProtectedAdminRoute from './components/admin/ProtectedAdminRoute.jsx';
 
 // Catch-all route component to prevent infinite redirects
 const CatchAllRoute = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const { user, loading } = useAuth();
   
   if (loading) {
     return (
@@ -43,7 +43,7 @@ const CatchAllRoute = () => {
     );
   }
   
-  if (isAuthenticated) {
+  if (user) {
     return <Navigate to="/dashboard" replace />;
   } else {
     return <Navigate to="/login" replace />;

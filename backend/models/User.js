@@ -21,7 +21,9 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: [true, 'Please provide a password'],
+    required: function() {
+      return this.loginProvider === 'email'; // Only required for email login
+    },
     minlength: [6, 'Password must be at least 6 characters'],
     select: false // Don't return password in queries by default
   },
@@ -53,6 +55,28 @@ const userSchema = new mongoose.Schema({
   },
   lastLogin: {
     type: Date
+  },
+  // Google OAuth fields
+  firebaseUid: {
+    type: String,
+    sparse: true // Allow multiple null values but unique non-null values
+  },
+  displayName: {
+    type: String,
+    trim: true
+  },
+  photoURL: {
+    type: String,
+    trim: true
+  },
+  emailVerified: {
+    type: Boolean,
+    default: false
+  },
+  loginProvider: {
+    type: String,
+    enum: ['email', 'google'],
+    default: 'email'
   },
   createdAt: {
     type: Date,

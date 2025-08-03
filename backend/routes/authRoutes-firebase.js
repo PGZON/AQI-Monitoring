@@ -7,7 +7,6 @@ const express = require('express');
 const router = express.Router();
 const { getFirebaseClientConfig } = require('../config/firebase');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
-const { googleLogin } = require('../controllers/authController');
 
 /**
  * @route GET /api/auth/config
@@ -52,13 +51,6 @@ router.post('/verify', authenticateToken, (req, res) => {
     });
   }
 });
-
-/**
- * @route POST /api/auth/google-login
- * @desc Google OAuth login/signup - stores user in MongoDB
- * @access Public (but requires Firebase token)
- */
-router.post('/google-login', authenticateToken, googleLogin);
 
 /**
  * @route GET /api/auth/user

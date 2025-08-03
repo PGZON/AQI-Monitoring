@@ -481,6 +481,71 @@ const exportData = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc    Google OAuth login/signup
+ * @route   POST /api/auth/google-login
+ * @access  Public (but requires Firebase token)
+ */
+const googleLogin = async (req, res, next) => {
+  try {
+    const { uid, email, displayName, photoURL, emailVerified } = req.body;
+    
+    console.log('🔐 Google login attempt for:', email);
+
+    // Check if user already exists
+    let user = await User.findByEmail(email);
+    
+    if (user) {
+      // Update existing user with Google info
+      user.firebaseUid = uid;
+      user.displayName = displayName;
+      user.photoURL = photoURL;
+      user.emailVerified = emailVerified;
+      user.lastLogin = new Date();
+      user.loginProvider = 'google';
+      
+      await user.save();
+      console.log('✅ Existing user updated with Google info:', email);
+    } else {
+      // Create new user from Google account
+      user = await User.create({
+        firebaseUid: uid,
+        name: displayName || email.split('@')[0],
+        displayName: displayName,
+        email: email.toLowerCase().trim(),
+        photoURL: photoURL,
+        emailVerified: emailVerified,
+        loginProvider: 'google',
+        isActive: true,
+        lastLogin: new Date()
+      });
+      
+      console.log('✅ New Google user created:', email);
+    }
+
+    // Return user data (no password hash needed for Google users)
+    res.status(200).json({
+      success: true,
+      message: 'Google login successful',
+      user: {
+        id: user._id,
+        name: user.name,
+        displayName: user.displayName,
+        email: user.email,
+        photoURL: user.photoURL,
+        emailVerified: user.emailVerified,
+        firebaseUid: user.firebaseUid,
+        loginProvider: user.loginProvider,
+        lastLogin: user.lastLogin
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Google login error:', error);
+    next(error);
+  }
+};
+
 module.exports = {
   signup,
   login,
@@ -497,5 +562,6 @@ module.exports = {
   getPreferences,
   updatePreferences,
   uploadAvatar,
-  exportData
+  exportData,
+  googleLogin
 };

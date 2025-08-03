@@ -12,6 +12,10 @@ console.log('✅ Step 3: Middleware modules loaded');
 const connectDB = require('./config/db');
 console.log('✅ Step 4: Database config loaded');
 
+// Initialize Firebase Admin SDK
+const { initializeFirebaseAdmin } = require('./config/firebase');
+console.log('✅ Step 4.5: Firebase config loaded');
+
 // Test simple middleware
 const { 
   errorHandler, 
@@ -92,6 +96,11 @@ console.log('✅ Step 15: All modules loaded successfully');
 // Startup function to handle async operations
 const startServer = async () => {
   try {
+    // Initialize Firebase Admin SDK
+    console.log('🔄 Step 15.5: Initializing Firebase Admin SDK...');
+    initializeFirebaseAdmin();
+    console.log('✅ Step 15.6: Firebase Admin SDK initialized');
+
     // Connect to database
     console.log('🔄 Step 16: Connecting to database...');
     await connectDB();
