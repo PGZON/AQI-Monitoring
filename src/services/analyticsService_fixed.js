@@ -8,10 +8,6 @@ class AnalyticsService {
   constructor() {
     this.cache = new Map();
     this.cacheTimeout = 10 * 60 * 1000; // 10 minutes
-    
-    // Clear cache on startup to ensure fresh data
-    console.log('🧹 [Analytics] Clearing analytics cache on service initialization');
-    this.clearCache();
   }
 
   /**
@@ -34,55 +30,28 @@ class AnalyticsService {
     }
 
     try {
-      console.log('🔍 [Analytics] Fetching personal insights from API:', { 
-        url: '/analytics/insights', 
-        params: { latitude, longitude } 
-      });
-      
       const response = await api.get('/analytics/insights', { 
         params: { latitude, longitude } 
       });
 
-      console.log('📊 [Analytics] Insights API Response:', {
-        status: response.status,
-        success: response.data?.success,
-        dataKeys: response.data?.data ? Object.keys(response.data.data) : 'no data',
-        fullResponse: response.data
-      });
-
-      if (response.status === 200 && response.data) {
-        const responseData = response.data;
+      if (response.status === 200) {
+        const data = response.data;
         
-        // Check if we have valid data structure
-        if (responseData.success === true || responseData.data) {
-          this.cache.set(cacheKey, {
-            data: responseData.data || responseData,
-            timestamp: Date.now()
-          });
+        this.cache.set(cacheKey, {
+          data: data.data,
+          timestamp: Date.now()
+        });
 
-          console.log('✅ [Analytics] Personal insights fetched from API successfully - Source: API');
-          return { success: true, data: responseData.data || responseData, source: 'api' };
-        }
+        return { success: true, data: data.data, source: 'api' };
       }
       
-      console.log('⚠️ [Analytics] API response not successful, using mock data. Response:', {
-        status: response?.status,
-        hasData: !!response?.data,
-        successField: response?.data?.success
-      });
       // Generate mock data for development
       const mockData = this.generateMockInsights({ latitude, longitude });
       return { success: true, data: mockData, source: 'mock' };
     } catch (error) {
-      console.error('❌ [Analytics] Failed to fetch personal insights from API:', {
-        message: error.message,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data
-      });
+      console.error('Analytics Service: Failed to fetch personal insights:', error);
       
       const mockData = this.generateMockInsights({ latitude, longitude });
-      console.log('🔄 [Analytics] Using insights mock data as fallback');
       return { success: false, data: mockData, source: 'mock', error: error.message };
     }
   }
@@ -105,79 +74,26 @@ class AnalyticsService {
         params.longitude = location.longitude;
       }
 
-      console.log('🔍 [Analytics] Fetching historical data from API:', { 
-        url: '/analytics/historical', 
-        params 
-      });
-      
       const response = await api.get('/analytics/historical', { params });
 
-      console.log('📊 [Analytics] Historical API Response:', {
-        status: response.status,
-        success: response.data?.success,
-        dataKeys: response.data?.data ? Object.keys(response.data.data) : 'no data',
-        data: response.data
-      });
-
-      if (response.status === 200 && response.data) {
-        const responseData = response.data;
-        
-        // Check if we have valid data structure
-        if (responseData.success === true || responseData.data) {
-          // Handle the nested data structure from backend
-          let processedData;
-          if (responseData.data && responseData.data.dataPoints) {
-          // Backend returns: { success: true, data: { dataPoints: [...] } }
-          processedData = {
-            historical: responseData.data.dataPoints,
-            summary: {
-              period: responseData.data.period || `${days} days`,
-              totalPoints: responseData.data.dataPoints.length,
-              averageAQI: responseData.data.averageAQI || Math.round(responseData.data.dataPoints.reduce((sum, item) => sum + item.aqi, 0) / responseData.data.dataPoints.length),
-              maxAQI: Math.max(...responseData.data.dataPoints.map(item => item.aqi)),
-              minAQI: Math.min(...responseData.data.dataPoints.map(item => item.aqi))
-            }
-          };
-        } else if (responseData.data && Array.isArray(responseData.data)) {
-          // Backend returns: { data: [...] }
-          processedData = {
-            historical: responseData.data,
-            summary: {
-              period: `${days} days`,
-              totalPoints: responseData.data.length,
-              averageAQI: Math.round(responseData.data.reduce((sum, item) => sum + item.aqi, 0) / responseData.data.length),
-              maxAQI: Math.max(...responseData.data.map(item => item.aqi)),
-              minAQI: Math.min(...responseData.data.map(item => item.aqi))
-            }
-          };
-        } else {
-          // Use existing mock data structure
-          processedData = responseData.data || responseData;
-        }
+      if (response.status === 200) {
+        const data = response.data;
         
         this.cache.set(cacheKey, {
-          data: processedData,
+          data: data.data,
           timestamp: Date.now()
         });
 
-        console.log('✅ [Analytics] Historical data processed successfully:', processedData);
-        return { success: true, data: processedData, source: 'api' };
-        }
+        return { success: true, data: data.data, source: 'api' };
       }
       
       // Generate mock data for development
       const mockData = this.generateMockHistoricalData(days, location);
       return { success: true, data: mockData, source: 'mock' };
     } catch (error) {
-      console.error('❌ [Analytics] Failed to fetch historical data from API:', {
-        message: error.message,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data
-      });
+      console.error('Analytics Service: Failed to fetch historical data:', error);
       
       const mockData = this.generateMockHistoricalData(days, location);
-      console.log('🔄 [Analytics] Using mock data as fallback');
       return { success: false, data: mockData, source: 'mock', error: error.message };
     }
   }
@@ -200,49 +116,26 @@ class AnalyticsService {
         params.longitude = location.longitude;
       }
 
-      console.log('🔍 [Analytics] Fetching weekly comparison from API:', { 
-        url: '/analytics/weekly-comparison', 
-        params 
-      });
-
       const response = await api.get('/analytics/weekly-comparison', { params });
 
-      console.log('📊 [Analytics] Weekly API Response:', {
-        status: response.status,
-        data: response.data
-      });
-
-      if (response.status === 200 && response.data) {
-        const responseData = response.data;
+      if (response.status === 200) {
+        const data = response.data;
         
-        // Check if we have valid data structure
-        if (responseData.success === true || responseData.data) {
-          // Extract the actual data - backend wraps it in data.data
-          const weeklyData = responseData.data || responseData;
-          
-          this.cache.set(cacheKey, {
-            data: weeklyData,
-            timestamp: Date.now()
-          });
+        this.cache.set(cacheKey, {
+          data: data.data,
+          timestamp: Date.now()
+        });
 
-          console.log('✅ [Analytics] Weekly comparison fetched from API successfully:', weeklyData);
-          return { success: true, data: weeklyData, source: 'api' };
-        }
+        return { success: true, data: data.data, source: 'api' };
       }
       
       // Generate mock data for development
       const mockData = this.generateMockWeeklyData(location);
       return { success: true, data: mockData, source: 'mock' };
     } catch (error) {
-      console.error('❌ [Analytics] Failed to fetch weekly comparison from API:', {
-        message: error.message,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data
-      });
+      console.error('Analytics Service: Failed to fetch weekly comparison:', error);
       
       const mockData = this.generateMockWeeklyData(location);
-      console.log('🔄 [Analytics] Using weekly mock data as fallback');
       return { success: false, data: mockData, source: 'mock', error: error.message };
     }
   }
@@ -267,17 +160,15 @@ class AnalyticsService {
 
       const response = await api.get('/analytics/location-history', { params });
 
-      if (response.status === 200 && response.data?.success) {
-        const responseData = response.data;
-        // Extract locations array from nested structure
-        const locations = responseData.data?.locations || responseData.locations || responseData.data || responseData;
+      if (response.status === 200) {
+        const data = response.data;
         
         this.cache.set(cacheKey, {
-          data: locations,
+          data: data.data,
           timestamp: Date.now()
         });
 
-        return { success: true, data: locations, source: 'api' };
+        return { success: true, data: data.data, source: 'api' };
       }
       
       // Generate mock data for development

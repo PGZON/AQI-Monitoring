@@ -3,7 +3,7 @@
  * Handles fetching and caching of user analytics data
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import analyticsService from '../services/analyticsService';
 
 /**
@@ -30,6 +30,12 @@ export const useAnalyticsData = (latitude, longitude, autoRefresh = true) => {
   });
 
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [dataSources, setDataSources] = useState({
+    historical: 'mock',
+    weekly: 'mock', 
+    locations: 'mock',
+    insights: 'mock'
+  });
 
   /**
    * Fetch historical AQI data
@@ -45,9 +51,11 @@ export const useAnalyticsData = (latitude, longitude, autoRefresh = true) => {
       
       if (result.success) {
         setHistoricalData(result.data);
+        setDataSources(prev => ({ ...prev, historical: result.source || 'api' }));
         setLastUpdated(new Date());
       } else {
         setError(prev => ({ ...prev, historical: result.error || 'Failed to fetch historical data' }));
+        setDataSources(prev => ({ ...prev, historical: result.source || 'mock' }));
         // Still set mock data for development
         setHistoricalData(result.data);
       }
@@ -68,12 +76,15 @@ export const useAnalyticsData = (latitude, longitude, autoRefresh = true) => {
     setError(prev => ({ ...prev, weekly: null }));
 
     try {
-      const result = await analyticsService.getWeeklyComparison(latitude, longitude);
+      const location = { latitude, longitude };
+      const result = await analyticsService.getWeeklyComparison(location);
       
       if (result.success) {
         setWeeklyComparison(result.data);
+        setDataSources(prev => ({ ...prev, weekly: result.source || 'api' }));
       } else {
         setError(prev => ({ ...prev, weekly: result.error || 'Failed to fetch weekly comparison' }));
+        setDataSources(prev => ({ ...prev, weekly: result.source || 'mock' }));
         // Still set mock data for development
         setWeeklyComparison(result.data);
       }
@@ -92,7 +103,8 @@ export const useAnalyticsData = (latitude, longitude, autoRefresh = true) => {
     setError(prev => ({ ...prev, locations: null }));
 
     try {
-      const result = await analyticsService.getLocationHistory();
+      const location = latitude && longitude ? { latitude, longitude } : null;
+      const result = await analyticsService.getLocationHistory(location);
       
       if (result.success) {
         setLocationHistory(result.data);
@@ -106,7 +118,7 @@ export const useAnalyticsData = (latitude, longitude, autoRefresh = true) => {
     } finally {
       setLoading(prev => ({ ...prev, locations: false }));
     }
-  }, []);
+  }, [latitude, longitude]);
 
   /**
    * Fetch personal insights
@@ -122,13 +134,16 @@ export const useAnalyticsData = (latitude, longitude, autoRefresh = true) => {
       
       if (result.success) {
         setPersonalInsights(result.data);
+        setDataSources(prev => ({ ...prev, insights: result.source || 'api' }));
       } else {
         setError(prev => ({ ...prev, insights: result.error || 'Failed to fetch personal insights' }));
         // Still set mock data for development
         setPersonalInsights(result.data);
+        setDataSources(prev => ({ ...prev, insights: result.source || 'mock' }));
       }
     } catch (err) {
       setError(prev => ({ ...prev, insights: err.message }));
+      setDataSources(prev => ({ ...prev, insights: 'mock' }));
     } finally {
       setLoading(prev => ({ ...prev, insights: false }));
     }
@@ -189,14 +204,26 @@ export const useAnalyticsData = (latitude, longitude, autoRefresh = true) => {
   const hasData = historicalData || weeklyComparison || locationHistory.length > 0 || personalInsights;
 
   // Summary statistics
-  const summary = {
-    totalLocationsTracked: locationHistory.length,
-    favoriteLocations: locationHistory.filter(loc => loc.isFavorite).length,
-    averageAQI: historicalData?.summary?.avgAQI || null,
-    daysTracked: historicalData?.summary?.totalDays || 0,
-    lastUpdated,
-    dataSource: 'mixed' // Will show API/mock mix in development
-  };
+  const summary = useMemo(() => {
+    // Determine overall data source
+    const apiSources = Object.values(dataSources).filter(source => source === 'api').length;
+    const totalSources = Object.values(dataSources).length;
+    const overallDataSource = apiSources === totalSources ? 'api' : 
+                             apiSources > 0 ? 'mixed' : 'mock';
+
+    return {
+      totalLocationsTracked: locationHistory.length || 0,
+      favoriteLocations: locationHistory.filter(loc => loc.isFavorite).length || 0,
+      averageAQI: historicalData?.summary?.averageAQI || personalInsights?.stats?.avgAQIThisWeek || 0,
+      daysTracked: Math.max(
+        historicalData?.summary?.totalPoints || 0,
+        personalInsights?.stats?.daysTracked || 0,
+        7 // default fallback
+      ),
+      lastUpdated,
+      dataSource: overallDataSource
+    };
+  }, [historicalData, locationHistory, personalInsights, lastUpdated, dataSources]);
 
   return {
     // Data
@@ -213,6 +240,7 @@ export const useAnalyticsData = (latitude, longitude, autoRefresh = true) => {
     hasErrors,
     hasData,
     lastUpdated,
+    dataSource: summary.dataSource || 'mock',
     
     // Actions
     fetchHistoricalData,

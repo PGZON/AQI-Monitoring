@@ -7,7 +7,26 @@ import React from 'react';
 import { getAQICategoryColor } from '../../utils/getAQICategoryColor';
 
 /**
- * Insight Stat Component
+ *         <InsightStat
+          value={stats.daysTracked || 0}
+          label="Days Tracked"
+          icon="📅"
+          color="blue"
+        />
+        
+        <InsightStat
+          value={stats.locationsVisited || 0}
+          label="Locations"
+          icon="🗺️"
+          color="green"
+        />
+        
+        <InsightStat
+          value={stats.checksThisWeek || 0}
+          label="This Week"
+          icon="🔄"
+          color="purple"
+        />nt
  */
 const InsightStat = ({ value, label, icon, color = 'blue' }) => {
   const colorClasses = {
@@ -143,8 +162,24 @@ const PersonalInsightsBanner = ({
     );
   }
 
+  // Provide default insights structure if none exists
+  const safeInsights = insights || {
+    primary: "Welcome to AQI Analytics! Start tracking to see your personalized insights.",
+    stats: {
+      daysTracked: 0,
+      locationsVisited: 0,
+      checksThisWeek: 0,
+      bestAQIThisWeek: null,
+      avgAQIThisWeek: null
+    },
+    trend: {
+      direction: 'improving',
+      percentage: 0
+    }
+  };
+
   // Empty state
-  if (!insights) {
+  if (!safeInsights || !safeInsights.stats) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="text-center">
@@ -158,8 +193,8 @@ const PersonalInsightsBanner = ({
     );
   }
 
-  const { primary, stats, trend } = insights;
-  const bestAQIColors = getAQICategoryColor(stats.bestAQIThisWeek);
+  const { primary, stats = {}, trend = {} } = safeInsights;
+  const bestAQIColors = stats.bestAQIThisWeek ? getAQICategoryColor(stats.bestAQIThisWeek) : null;
 
   // Compact version for smaller spaces
   if (compact) {
@@ -171,9 +206,9 @@ const PersonalInsightsBanner = ({
             <p className="font-medium text-blue-900 text-sm">{primary}</p>
             <div className="flex items-center space-x-4 mt-2">
               <span className="text-xs text-blue-700">
-                {stats.daysTracked} days tracked
+                {stats.daysTracked || 0} days tracked
               </span>
-              <TrendArrow direction={trend.direction} percentage={trend.percentage} />
+              <TrendArrow direction={trend.direction || 'improving'} percentage={trend.percentage || 0} />
             </div>
           </div>
         </div>
@@ -197,9 +232,11 @@ const PersonalInsightsBanner = ({
           <div className="flex-1">
             <p className="text-lg font-medium text-blue-900 mb-3">{primary}</p>
             <div className="flex items-center space-x-3">
-              <TrendArrow direction={trend.direction} percentage={trend.percentage} />
+              <TrendArrow direction={trend.direction || 'improving'} percentage={trend.percentage || 0} />
               <span className="text-sm text-blue-700">
-                Based on your {stats.daysTracked} days of tracking
+                <p className="text-sm text-gray-600 mb-4">
+                Based on your {stats.daysTracked || 0} days of tracking
+              </p>
               </span>
             </div>
           </div>
@@ -235,9 +272,9 @@ const PersonalInsightsBanner = ({
             <div>
               <div 
                 className="font-bold text-lg px-2 py-1 rounded text-white text-xs"
-                style={{ backgroundColor: bestAQIColors.hex }}
+                style={{ backgroundColor: bestAQIColors?.hex || '#6B7280' }}
               >
-                {stats.bestAQIThisWeek}
+                {stats.bestAQIThisWeek || '--'}
               </div>
               <div className="text-xs font-medium text-gray-600 mt-1">Best AQI</div>
             </div>
@@ -253,28 +290,28 @@ const PersonalInsightsBanner = ({
             title="Air Quality Aware"
             description="Track AQI for 7+ days"
             icon="🌟"
-            earned={stats.daysTracked >= 7}
+            earned={(stats.daysTracked || 0) >= 7}
           />
           
           <AchievementBadge
             title="Location Explorer"
             description="Check AQI in 3+ locations"
             icon="🗺️"
-            earned={stats.locationsVisited >= 3}
+            earned={(stats.locationsVisited || 0) >= 3}
           />
           
           <AchievementBadge
             title="Health Conscious"
             description="Check AQI 20+ times in a week"
             icon="💚"
-            earned={stats.checksThisWeek >= 20}
+            earned={(stats.checksThisWeek || 0) >= 20}
           />
           
           <AchievementBadge
             title="Clean Air Finder"
             description="Find location with AQI < 30"
             icon="🌬️"
-            earned={stats.bestAQIThisWeek < 30}
+            earned={(stats.bestAQIThisWeek || 100) < 30}
           />
         </div>
       </div>
@@ -284,17 +321,17 @@ const PersonalInsightsBanner = ({
         <h4 className="font-semibold text-gray-900 mb-3">This Week's Summary</h4>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
           <div>
-            <div className="text-2xl font-bold text-gray-900">{stats.avgAQIThisWeek}</div>
+            <div className="text-2xl font-bold text-gray-900">{stats.avgAQIThisWeek || '--'}</div>
             <div className="text-sm text-gray-600">Average AQI</div>
           </div>
           
           <div>
-            <div className="text-2xl font-bold text-gray-900">{stats.checksThisWeek}</div>
+            <div className="text-2xl font-bold text-gray-900">{stats.checksThisWeek || 0}</div>
             <div className="text-sm text-gray-600">Total Checks</div>
           </div>
           
           <div>
-            <div className="text-2xl font-bold text-gray-900">{stats.locationsVisited}</div>
+            <div className="text-2xl font-bold text-gray-900">{stats.locationsVisited || 0}</div>
             <div className="text-sm text-gray-600">Locations</div>
           </div>
         </div>

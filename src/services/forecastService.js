@@ -244,24 +244,120 @@ class ForecastService {
    */
   async getHeatmapData(bounds, limit = 50) {
     try {
-      // Use the nearby AQI endpoint to get multiple locations
-      const centerLat = (bounds.north + bounds.south) / 2;
-      const centerLng = (bounds.east + bounds.west) / 2;
+      console.log('🗺️ [ForecastService] Fetching heatmap data from public endpoint');
       
-      const response = await api.get('/aqi/nearby', {
+      // Validate bounds before sending to API
+      const { north, south, east, west } = bounds;
+      
+      // Additional validation
+      if (!north || !south || !east || !west || 
+          typeof north !== 'number' || typeof south !== 'number' ||
+          typeof east !== 'number' || typeof west !== 'number') {
+        throw new Error('Invalid bounds: all values must be numbers');
+      }
+      
+      if (west < -180 || west > 180 || east < -180 || east > 180) {
+        throw new Error(`Invalid longitude bounds: west=${west}, east=${east}`);
+      }
+      
+      if (north < -90 || north > 90 || south < -90 || south > 90) {
+        throw new Error(`Invalid latitude bounds: north=${north}, south=${south}`);
+      }
+      
+      console.log('🗺️ [ForecastService] Using validated bounds:', bounds);
+      
+      // Use the public heatmap endpoint
+      const response = await api.get('/history/heatmap', {
         params: { 
-          lat: centerLat,
-          lng: centerLng,
-          radius: 50, // 50km radius
-          limit 
+          minLat: south,
+          maxLat: north,
+          minLon: west,
+          maxLon: east,
+          limit,
+          range: '1d' // Get current/recent data
         }
       });
       
-      return response.data.locations || response.data.data || [];
+      console.log('✅ [ForecastService] Heatmap response:', {
+        success: response.data?.success,
+        count: response.data?.count,
+        dataLength: response.data?.data?.length
+      });
+      
+      // Transform backend data to frontend format
+      const rawData = response.data.data || response.data.locations || response.data || [];
+      const transformedData = rawData.map(item => {
+        // Handle both backend format (avgAQI, lat, lon) and mock format (aqi.index, coordinates)
+        const aqiValue = item.avgAQI || item.aqi?.index || 50;
+        const latitude = item.lat || item.coordinates?.lat || item.coordinates?.latitude;
+        const longitude = item.lon || item.coordinates?.lng || item.coordinates?.longitude;
+        
+        return {
+          id: item.id || `location_${Math.random().toString(36).substr(2, 9)}`,
+          name: item.location || item.city || item.name || 'Unknown Location',
+          coordinates: {
+            lat: latitude,
+            lng: longitude
+          },
+          aqi: {
+            index: Math.round(aqiValue),
+            level: item.level || this.getAQILevel(aqiValue),
+            color: this.getAQIColor(aqiValue)
+          },
+          pollutants: {
+            pm2_5: { value: Math.round(item.avgPM25 || item.pollutants?.pm2_5?.value || 0), unit: 'μg/m³' },
+            pm10: { value: Math.round(item.avgPM10 || item.pollutants?.pm10?.value || 0), unit: 'μg/m³' },
+            co: { value: item.pollutants?.co?.value || 0, unit: 'mg/m³' },
+            no2: { value: item.pollutants?.no2?.value || 0, unit: 'μg/m³' },
+            o3: { value: item.pollutants?.o3?.value || 0, unit: 'μg/m³' }
+          },
+          lastUpdated: item.lastUpdated || item.requestTimestamp || new Date().toISOString(),
+          count: item.count || 1
+        };
+      });
+      
+      console.log('🗺️ [ForecastService] Transformed data sample:', transformedData[0]);
+      return transformedData;
+      
     } catch (error) {
-      console.warn('Failed to fetch heatmap data, using mock data:', error);
-      return generateMockHeatmapData(limit);
+      console.error('❌ [ForecastService] Heatmap API error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        bounds: bounds
+      });
+      
+      console.warn('⚠️ [ForecastService] API failed, immediately returning mock data');
+      
+      // Return mock data immediately instead of throwing
+      const mockData = generateMockHeatmapData(limit);
+      console.log('🗺️ [ForecastService] Using mock data:', mockData.length, 'locations');
+      return mockData;
     }
+  }
+
+  /**
+   * Helper method to get AQI level from value
+   */
+  getAQILevel(aqi) {
+    if (aqi <= 50) return 'Good';
+    if (aqi <= 100) return 'Moderate';
+    if (aqi <= 150) return 'Unhealthy for Sensitive Groups';
+    if (aqi <= 200) return 'Unhealthy';
+    if (aqi <= 300) return 'Very Unhealthy';
+    return 'Hazardous';
+  }
+
+  /**
+   * Helper method to get AQI color from value
+   */
+  getAQIColor(aqi) {
+    if (aqi <= 50) return '#00e400';
+    if (aqi <= 100) return '#ffff00';
+    if (aqi <= 150) return '#ff7e00';
+    if (aqi <= 200) return '#ff0000';
+    if (aqi <= 300) return '#8f3f97';
+    return '#7e0023';
   }
 
   /**

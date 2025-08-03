@@ -318,17 +318,17 @@ export const getHeatmapColor = (aqiValue) => {
 };
 
 /**
- * Get marker size based on AQI value for heatmap
+ * Get marker size based on AQI value for heatmap (made bigger for visibility)
  * @param {number} aqiValue - The AQI value
  * @returns {number} Marker size in pixels
  */
 export const getHeatmapMarkerSize = (aqiValue) => {
-  if (aqiValue <= 50) return 8;
-  if (aqiValue <= 100) return 12;
-  if (aqiValue <= 150) return 16;
-  if (aqiValue <= 200) return 20;
-  if (aqiValue <= 300) return 24;
-  return 28;
+  if (aqiValue <= 50) return 12;   // Increased from 8
+  if (aqiValue <= 100) return 16;  // Increased from 12
+  if (aqiValue <= 150) return 20;  // Increased from 16
+  if (aqiValue <= 200) return 24;  // Increased from 20
+  if (aqiValue <= 300) return 28;  // Increased from 24
+  return 32;                       // Increased from 28
 };
 
 /**
@@ -339,31 +339,72 @@ export const getHeatmapMarkerSize = (aqiValue) => {
 export const generateMockHeatmapData = (count = 20) => {
   const locations = [];
   
-  // Base coordinates for different cities
+  // Base coordinates for different Indian cities (expanded list)
   const baseCities = [
-    { name: 'New York', lat: 40.7128, lng: -74.0060 },
-    { name: 'Los Angeles', lat: 34.0522, lng: -118.2437 },
-    { name: 'Chicago', lat: 41.8781, lng: -87.6298 },
-    { name: 'Houston', lat: 29.7604, lng: -95.3698 },
-    { name: 'Phoenix', lat: 33.4484, lng: -112.0740 },
-    { name: 'Philadelphia', lat: 39.9526, lng: -75.1652 },
-    { name: 'San Antonio', lat: 29.4241, lng: -98.4936 },
-    { name: 'San Diego', lat: 32.7157, lng: -117.1611 },
-    { name: 'Dallas', lat: 32.7767, lng: -96.7970 },
-    { name: 'San Jose', lat: 37.3382, lng: -121.8863 }
+    { name: 'Kolhapur', lat: 16.7050, lng: 74.2433 },
+    { name: 'Mumbai', lat: 19.0760, lng: 72.8777 },
+    { name: 'Delhi', lat: 28.6139, lng: 77.2090 },
+    { name: 'Bangalore', lat: 12.9716, lng: 77.5946 },
+    { name: 'Pune', lat: 18.5204, lng: 73.8567 },
+    { name: 'Ahmedabad', lat: 23.0225, lng: 72.5714 },
+    { name: 'Chennai', lat: 13.0827, lng: 80.2707 },
+    { name: 'Hyderabad', lat: 17.3850, lng: 78.4867 },
+    { name: 'Lucknow', lat: 26.8467, lng: 80.9462 },
+    { name: 'Jaipur', lat: 26.9124, lng: 75.7873 },
+    { name: 'Surat', lat: 21.1702, lng: 72.8311 },
+    { name: 'Kanpur', lat: 26.4499, lng: 80.3319 },
+    { name: 'Nagpur', lat: 21.1458, lng: 79.0882 },
+    { name: 'Indore', lat: 22.7196, lng: 75.8577 },
+    { name: 'Thane', lat: 19.2183, lng: 72.9781 },
+    { name: 'Bhopal', lat: 23.2599, lng: 77.4126 },
+    { name: 'Visakhapatnam', lat: 17.6868, lng: 83.2185 },
+    { name: 'Patna', lat: 25.5941, lng: 85.1376 },
+    { name: 'Vadodara', lat: 22.3072, lng: 73.1812 },
+    { name: 'Ghaziabad', lat: 28.6692, lng: 77.4538 },
+    { name: 'Ludhiana', lat: 30.9010, lng: 75.8573 },
+    { name: 'Agra', lat: 27.1767, lng: 78.0081 },
+    { name: 'Nashik', lat: 19.9975, lng: 73.7898 },
+    { name: 'Faridabad', lat: 28.4089, lng: 77.3178 },
+    { name: 'Meerut', lat: 28.9845, lng: 77.7064 },
+    { name: 'Rajkot', lat: 22.3039, lng: 70.8022 },
+    { name: 'Kalyan', lat: 19.2437, lng: 73.1355 },
+    { name: 'Vasai', lat: 19.4911, lng: 72.8060 },
+    { name: 'Varanasi', lat: 25.3176, lng: 82.9739 },
+    { name: 'Srinagar', lat: 34.0837, lng: 74.7973 }
   ];
   
   for (let i = 0; i < count; i++) {
     const baseCity = baseCities[i % baseCities.length];
-    const aqiValue = Math.floor(Math.random() * 200) + 20;
+    
+    // Generate truly unique AQI for each location using multiple factors
+    const cityHash = baseCity.name.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+    const stationNumber = Math.floor(i / baseCities.length) + 1;
+    const seed = cityHash + i * 17 + stationNumber * 7; // More variation
+    
+    // Create AQI value between 15-250 with good distribution
+    const normalizedSeed = Math.abs(Math.sin(seed * 0.1)) * 0.8 + Math.abs(Math.cos(seed * 0.05)) * 0.2;
+    const aqiValue = Math.floor(normalizedSeed * 235) + 15; // 15-250 range
     const category = getAQICategory(aqiValue);
     
+    // Add realistic variation to coordinates based on station number
+    const latVariation = (Math.sin(seed * 0.02) * 0.5) * 0.4; // ±0.2 degrees
+    const lngVariation = (Math.cos(seed * 0.03) * 0.5) * 0.4; // ±0.2 degrees
+    
+    // Generate unique pollutant values correlated with AQI but with variation
+    const pm25Base = Math.floor(aqiValue * 0.4); // Base PM2.5 from AQI
+    const pm25Variation = Math.floor(Math.sin(seed * 0.07) * 15); // ±15 variation
+    const pm25Value = Math.max(1, Math.min(150, pm25Base + pm25Variation));
+    
+    const pm10Base = Math.floor(aqiValue * 0.6); // Base PM10 from AQI  
+    const pm10Variation = Math.floor(Math.cos(seed * 0.09) * 20); // ±20 variation
+    const pm10Value = Math.max(2, Math.min(200, pm10Base + pm10Variation));
+    
     locations.push({
-      id: `location_${i}`,
-      name: `${baseCity.name} Station ${Math.floor(i / baseCities.length) + 1}`,
+      id: `location_${i}_${baseCity.name.toLowerCase().replace(/\s+/g, '_')}_st${stationNumber}`,
+      name: `${baseCity.name} Station ${stationNumber}`,
       coordinates: {
-        lat: baseCity.lat + (Math.random() - 0.5) * 0.2, // Add some variation
-        lng: baseCity.lng + (Math.random() - 0.5) * 0.2
+        lat: baseCity.lat + latVariation,
+        lng: baseCity.lng + lngVariation
       },
       aqi: {
         index: aqiValue,
@@ -371,14 +412,19 @@ export const generateMockHeatmapData = (count = 20) => {
         color: category.color
       },
       pollutants: {
-        pm2_5: { value: Math.floor(Math.random() * 50) + 5, unit: 'μg/m³' },
-        pm10: { value: Math.floor(Math.random() * 80) + 10, unit: 'μg/m³' },
-        co: { value: Math.floor(Math.random() * 15) + 2, unit: 'mg/m³' },
-        no2: { value: Math.floor(Math.random() * 60) + 10, unit: 'μg/m³' },
-        o3: { value: Math.floor(Math.random() * 120) + 20, unit: 'μg/m³' }
+        pm2_5: { value: pm25Value, unit: 'μg/m³' },
+        pm10: { value: pm10Value, unit: 'μg/m³' },
+        co: { value: Math.floor(Math.abs(Math.sin(seed * 0.11)) * 12) + 1, unit: 'mg/m³' },
+        no2: { value: Math.floor(Math.abs(Math.cos(seed * 0.13)) * 55) + 5, unit: 'μg/m³' },
+        o3: { value: Math.floor(Math.abs(Math.sin(seed * 0.17)) * 110) + 10, unit: 'μg/m³' }
       },
-      lastUpdated: new Date(Date.now() - Math.random() * 3600000).toISOString() // Within last hour
+      lastUpdated: new Date(Date.now() - Math.floor(Math.abs(Math.sin(seed * 0.19)) * 7200000)).toISOString() // 0-2 hours ago
     });
+    
+    // Debug logging for first few locations
+    if (i < 5) {
+      console.log(`Location ${i}: ${baseCity.name} Station ${stationNumber} - AQI: ${aqiValue}, Seed: ${seed}`);
+    }
   }
   
   return locations;

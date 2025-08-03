@@ -3,8 +3,7 @@
  * Main analytics dashboard with historical data, weekly comparisons, and personal insights
  */
 
-import React, { memo } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { memo, useState } from 'react';
 import { useAnalyticsData } from '../hooks/useAnalyticsData';
 import AQILineChart from '../components/Analytics/AQILineChart';
 import WeeklyComparisonCard from '../components/Analytics/WeeklyComparisonCard';
@@ -16,7 +15,10 @@ import PersonalInsightsBanner from '../components/Analytics/PersonalInsightsBann
  */
 const AnalyticsHeader = memo(({ 
   onLocationChange, 
-  selectedLocation, 
+  selectedLocation,
+  presetLocations,
+  latitude,
+  longitude, 
   onRefresh, 
   isRefreshing,
   lastUpdated 
@@ -37,9 +39,37 @@ const AnalyticsHeader = memo(({
         </div>
         
         <div className="flex items-center space-x-4">
-          <div className="text-sm text-gray-600">
-            📍 {selectedLocation?.name || 'No location selected'}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+            <div className="flex items-center space-x-2">
+              <span className="text-blue-600">📍</span>
+              <div>
+                <div className="text-sm font-medium text-blue-800">
+                  {selectedLocation?.name || 'Current Location'}
+                </div>
+                <div className="text-xs text-blue-600">
+                  {latitude?.toFixed(4)}, {longitude?.toFixed(4)}
+                </div>
+              </div>
+            </div>
           </div>
+          
+          <select 
+            value={`${selectedLocation?.latitude},${selectedLocation?.longitude}`}
+            onChange={(e) => {
+              const [lat, lng] = e.target.value.split(',');
+              const location = presetLocations.find(loc => 
+                loc.latitude === parseFloat(lat) && loc.longitude === parseFloat(lng)
+              );
+              if (location) onLocationChange(location);
+            }}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            {presetLocations.map(location => (
+              <option key={`${location.latitude},${location.longitude}`} value={`${location.latitude},${location.longitude}`}>
+                {location.name}
+              </option>
+            ))}
+          </select>
           
           <button
             onClick={onRefresh}
@@ -131,36 +161,19 @@ const QuickStats = memo(({ summary, loading }) => {
 });
 
 /**
- * Data Source Indicator - Memoized for performance
- */
-const DataSourceIndicator = memo(({ hasErrors, dataSource }) => {
-  if (!hasErrors && dataSource === 'api') return null;
-
-  return (
-    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-      <div className="flex items-center space-x-2">
-        <span className="text-yellow-600">⚠️</span>
-        <div>
-          <p className="text-sm font-medium text-yellow-800">
-            {hasErrors ? 'Using Demo Data' : 'Development Mode'}
-          </p>
-          <p className="text-xs text-yellow-700">
-            {hasErrors 
-              ? 'Unable to connect to analytics service. Showing sample data for demonstration.'
-              : 'Currently showing sample data. Connect to backend for real analytics.'
-            }
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-});
-
-/**
  * Main Analytics Page Component
  */
 const AnalyticsPage = () => {
-  const { selectedLocation, setLocation } = useLocation();
+  // Preset locations for testing
+  const presetLocations = [
+    { name: 'New York City', latitude: 40.7128, longitude: -74.0060 },
+    { name: 'Kolhapur, India', latitude: 16.7050, longitude: 74.2433 },
+    { name: 'Mumbai, India', latitude: 19.0760, longitude: 72.8777 },
+    { name: 'Delhi, India', latitude: 28.6139, longitude: 77.2090 }
+  ];
+
+  // Local state for selected location
+  const [selectedLocation, setSelectedLocation] = useState(presetLocations[1]); // Default to Kolhapur
   
   // Get coordinates from selected location
   const latitude = selectedLocation?.latitude || 40.7128;
@@ -176,14 +189,13 @@ const AnalyticsPage = () => {
     loading,
     error,
     isLoading,
-    hasErrors,
     lastUpdated,
     refreshData
   } = useAnalyticsData(latitude, longitude);
 
   // Handle location selection from history
   const handleLocationSelect = (location) => {
-    setLocation({
+    setSelectedLocation({
       name: location.name,
       latitude: location.latitude,
       longitude: location.longitude
@@ -201,17 +213,20 @@ const AnalyticsPage = () => {
         {/* Header */}
         <AnalyticsHeader
           selectedLocation={selectedLocation}
-          onLocationChange={setLocation}
+          presetLocations={presetLocations}
+          latitude={latitude}
+          longitude={longitude}
+          onLocationChange={setSelectedLocation}
           onRefresh={handleRefresh}
           isRefreshing={isLoading}
           lastUpdated={lastUpdated}
         />
 
-        {/* Data Source Warning */}
-        <DataSourceIndicator 
+        {/* Data Source Warning - Disabled */}
+        {/* <DataSourceIndicator 
           hasErrors={hasErrors}
-          dataSource={summary.dataSource}
-        />
+          dataSource={dataSource}
+        /> */}
 
         {/* Quick Stats */}
         <QuickStats summary={summary} loading={loading.insights} />

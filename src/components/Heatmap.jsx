@@ -7,7 +7,6 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import forecastService from '../services/forecastService';
 import { 
   getHeatmapMarkerSize, 
   formatLastUpdated,
@@ -34,12 +33,42 @@ const MapBoundsHandler = ({ onBoundsChange }) => {
     
     const handleBoundsChange = () => {
       const bounds = map.getBounds();
+      
+      // Get raw bounds
+      let rawWest = bounds.getWest();
+      let rawEast = bounds.getEast();
+      const rawNorth = bounds.getNorth();
+      const rawSouth = bounds.getSouth();
+      
+      // Handle longitude wrap-around (crossing 180°/-180° meridian)
+      if (rawWest > rawEast) {
+        // Map crosses the date line, normalize to standard bounds
+        rawWest = rawWest - 360;
+      }
+      
+      // Clamp longitude values to valid range (-180 to 180)
+      const west = Math.max(-180, Math.min(180, rawWest));
+      const east = Math.max(-180, Math.min(180, rawEast));
+      const north = Math.max(-90, Math.min(90, rawNorth));
+      const south = Math.max(-90, Math.min(90, rawSouth));
+      
+      console.log('🗺️ [MapBounds] Bounds check:', { 
+        raw: { west: rawWest, east: rawEast, north: rawNorth, south: rawSouth },
+        clamped: { west, east, north, south }
+      });
+      
+      // Ensure bounds are valid (west < east, south < north)
+      if (west >= east || south >= north) {
+        console.warn('🗺️ [MapBounds] Invalid bounds detected, skipping update');
+        return;
+      }
+      
       // Use callback with useCallback and proper dependencies in parent
       onBoundsChange({
-        north: bounds.getNorth(),
-        south: bounds.getSouth(),
-        east: bounds.getEast(),
-        west: bounds.getWest()
+        north,
+        south,
+        east,
+        west
       });
     };
 
@@ -50,29 +79,29 @@ const MapBoundsHandler = ({ onBoundsChange }) => {
       map.off('moveend', handleBoundsChange);
       map.off('zoomend', handleBoundsChange);
     };
-  }, [map]); // Remove onBoundsChange dependency, handle in parent with useCallback
+  }, [map, onBoundsChange]);
 
   return null;
 };
 
 /**
- * AQI Legend Component
+ * AQI Legend Component (Compact version)
  */
 const AQILegend = ({ className = '' }) => {
   const categories = Object.values(AQI_CATEGORIES);
 
   return (
-    <div className={`bg-white rounded-lg shadow-lg p-4 ${className}`}>
-      <h3 className="text-sm font-semibold text-gray-900 mb-3">AQI Scale</h3>
-      <div className="space-y-2">
+    <div className={`bg-white rounded-lg shadow-lg p-3 ${className} max-w-48`}>
+      <h3 className="text-xs font-semibold text-gray-900 mb-2">AQI Scale</h3>
+      <div className="space-y-1">
         {categories.map((category, index) => (
-          <div key={index} className="flex items-center space-x-3">
+          <div key={index} className="flex items-center space-x-2">
             <div 
-              className="w-4 h-4 rounded-full flex-shrink-0"
+              className="w-3 h-3 rounded-full flex-shrink-0"
               style={{ backgroundColor: category.color }}
             />
             <div className="flex-1 min-w-0">
-              <div className="text-xs font-medium text-gray-900">
+              <div className="text-xs font-medium text-gray-900 truncate">
                 {category.level}
               </div>
               <div className="text-xs text-gray-500">
@@ -95,7 +124,8 @@ const HeatmapControls = ({
   showHealthySites, 
   onToggleHealthySites,
   selectedPollutant,
-  onPollutantChange 
+  onPollutantChange,
+  hasData = false
 }) => {
   const pollutants = [
     { key: 'aqi', label: 'AQI', description: 'Overall Air Quality Index' },
@@ -112,22 +142,24 @@ const HeatmapControls = ({
         <button
           onClick={onRefresh}
           disabled={isLoading}
-          className="p-2 text-gray-600 hover:text-blue-600 disabled:opacity-50 transition-colors"
-          title="Refresh data"
+          className="px-3 py-2 text-sm font-medium rounded-lg transition-colors text-gray-600 hover:text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+          title="Refresh heatmap data"
         >
-          <svg 
-            className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} 
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
-          >
-            <path 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              strokeWidth={2} 
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
-            />
-          </svg>
+          {isLoading ? (
+            <div className="flex items-center space-x-2">
+              <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>Loading...</span>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>Refresh</span>
+            </div>
+          )}
         </button>
       </div>
 
@@ -170,37 +202,27 @@ const HeatmapControls = ({
  * Main Heatmap Component
  */
 const Heatmap = ({ 
-  center = [39.8283, -98.5795], // Geographic center of US
+  center = [20.5937, 78.9629], // Geographic center of India
   zoom = 5,
   className = '',
   onLocationSelect = null 
 }) => {
   const [heatmapData, setHeatmapData] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true); // Start loading immediately
   const [selectedPollutant, setSelectedPollutant] = useState('aqi');
   const [showHealthySites, setShowHealthySites] = useState(true);
   const [mapBounds, setMapBounds] = useState(null);
   const [error, setError] = useState(null);
 
-  /**
-   * Fetch heatmap data based on current map bounds
-   */
-  const fetchHeatmapData = useCallback(async () => {
-    if (!mapBounds) return;
+  console.log('🗺️ [Heatmap] Component state:', { 
+    isLoading, 
+    dataLength: heatmapData.length, 
+    hasError: !!error,
+    hasBounds: !!mapBounds
+  });
 
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const data = await forecastService.getHeatmapData(mapBounds, 50);
-      setHeatmapData(data);
-    } catch (err) {
-      console.error('Error fetching heatmap data:', err);
-      setError('Failed to load heatmap data');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [mapBounds]);
+  // Remove emergency timeout since we load automatically now
+  // Emergency timeout removed - data loads automatically on mount
 
   /**
    * Handle map bounds change
@@ -213,8 +235,39 @@ const Heatmap = ({
    * Filter data based on selected pollutant and visibility settings
    */
   const filteredData = useMemo(() => {
+    if (!Array.isArray(heatmapData)) {
+      console.warn('🗺️ [Heatmap] heatmapData is not an array:', heatmapData);
+      return [];
+    }
+    
     return heatmapData.filter(location => {
+      // Enhanced safety check for location structure
+      if (!location) {
+        console.warn('🗺️ [Heatmap] Null location found');
+        return false;
+      }
+      
+      // Check coordinates
+      if (!location.coordinates || 
+          typeof location.coordinates.lat !== 'number' || 
+          typeof location.coordinates.lng !== 'number') {
+        console.warn('🗺️ [Heatmap] Invalid coordinates:', location.coordinates);
+        return false;
+      }
+      
+      // Check AQI data
+      if (!location.aqi || typeof location.aqi.index !== 'number') {
+        console.warn('🗺️ [Heatmap] Invalid AQI data:', location.aqi);
+        return false;
+      }
+      
       const aqiValue = location.aqi.index;
+      
+      // Validate AQI range
+      if (aqiValue < 0 || aqiValue > 500) {
+        console.warn('🗺️ [Heatmap] AQI value out of range:', aqiValue);
+        return false;
+      }
       
       // Filter out healthy sites if option is disabled
       if (!showHealthySites && aqiValue <= 50) {
@@ -229,8 +282,18 @@ const Heatmap = ({
    * Get marker color based on selected pollutant
    */
   const getMarkerColor = useCallback((location) => {
+    // Safety check for location structure
+    if (!location || !location.aqi) {
+      return '#6b7280'; // Default gray color
+    }
+    
     if (selectedPollutant === 'aqi') {
-      return location.aqi.color;
+      return location.aqi.color || '#6b7280';
+    }
+    
+    // Safety check for pollutants
+    if (!location.pollutants || !location.pollutants[selectedPollutant]) {
+      return '#6b7280';
     }
     
     const pollutantValue = location.pollutants[selectedPollutant]?.value;
@@ -245,17 +308,66 @@ const Heatmap = ({
     return AQI_CATEGORIES.HAZARDOUS.color;
   }, [selectedPollutant]);
 
-  // Fetch data when bounds change
+  /**
+   * Fetch heatmap data automatically on component mount
+   */
+  const fetchHeatmapData = useCallback(async () => {
+    if (isLoading && heatmapData.length > 0) return; // Don't reload if already loaded
+
+    console.log('🗺️ [Heatmap] Auto-loading heatmap data');
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Generate mock data with all Indian cities
+      console.log('🗺️ [Heatmap] Loading mock data with all Indian cities');
+      
+      const { generateMockHeatmapData } = require('../utils/aqiUtils');
+      const mockData = generateMockHeatmapData(50); // Generate 50 locations
+      
+      console.log('🗺️ [Heatmap] Generated', mockData.length, 'mock locations');
+      
+      // Verify unique AQI values
+      const aqiValues = mockData.map(d => d.aqi.index);
+      const uniqueAQIs = [...new Set(aqiValues)];
+      console.log('🗺️ [Heatmap] AQI Values:', aqiValues.slice(0, 10), '...');
+      console.log('🗺️ [Heatmap] Unique AQI count:', uniqueAQIs.length, 'out of', mockData.length);
+      
+      // Log first few with details
+      console.log('🗺️ [Heatmap] Sample data:');
+      mockData.slice(0, 5).forEach((d, i) => {
+        console.log(`  ${i+1}. ${d.name}: AQI ${d.aqi.index} (${d.aqi.level})`);
+      });
+      
+      setHeatmapData(mockData);
+        
+    } catch (error) {
+      console.error('🗺️ [Heatmap] Error loading data:', error);
+      setError('Failed to load data');
+      setHeatmapData([]);
+    } finally {
+      setIsLoading(false);
+      console.log('🗺️ [Heatmap] Load complete');
+    }
+  }, [isLoading, heatmapData.length]);
+
+  // Auto-load data on component mount
   useEffect(() => {
-    if (mapBounds) {
+    fetchHeatmapData();
+  }, [fetchHeatmapData]); // Include fetchHeatmapData dependency
+
+  // Load data when bounds change (for refresh functionality)
+  useEffect(() => {
+    if (mapBounds && heatmapData.length > 0) {
+      // Only refresh if we already have data and bounds changed
       fetchHeatmapData();
     }
-  }, [fetchHeatmapData, mapBounds]);
+  }, [mapBounds, fetchHeatmapData, heatmapData.length]); // Include all dependencies
 
   return (
     <div className={`relative ${className}`}>
-      {/* Map Container */}
-      <div className="h-96 lg:h-[500px] rounded-lg overflow-hidden shadow-lg">
+      {/* Map Container - Made bigger */}
+      <div className="h-[600px] lg:h-[700px] rounded-lg overflow-hidden shadow-lg">
         <MapContainer
           center={center}
           zoom={zoom}
@@ -344,8 +456,8 @@ const Heatmap = ({
         </MapContainer>
       </div>
 
-      {/* Map Controls Overlay */}
-      <div className="absolute top-4 left-4 z-20 w-64">
+      {/* Map Controls Overlay - Moved to top-right, smaller */}
+      <div className="absolute top-4 right-4 z-20 w-56">
         <HeatmapControls
           isLoading={isLoading}
           onRefresh={fetchHeatmapData}
@@ -353,10 +465,11 @@ const Heatmap = ({
           onToggleHealthySites={setShowHealthySites}
           selectedPollutant={selectedPollutant}
           onPollutantChange={setSelectedPollutant}
+          hasData={heatmapData.length > 0}
         />
       </div>
 
-      {/* Legend Overlay */}
+      {/* Legend Overlay - Moved to bottom-left, smaller */}
       <div className="absolute bottom-4 left-4 z-20">
         <AQILegend />
       </div>
