@@ -104,6 +104,7 @@ const deleteAccountValidation = [
 
 // Public routes
 router.post('/signup', signupValidation, handleValidationErrors, signup);
+router.post('/register', signupValidation, handleValidationErrors, signup); // Alias for /signup
 router.post('/login', loginValidation, handleValidationErrors, login);
 
 // Protected routes (require authentication)
