@@ -61,7 +61,6 @@ MANIFEST
 *.log
 
 # Machine Learning models and data
-backend/ml/saved_models/
 backend/ml/logs/
 *.pkl
 *.joblib
